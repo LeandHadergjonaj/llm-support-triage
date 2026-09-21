@@ -6,8 +6,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from triage.baseline import VERSION, system_prompt  # noqa: E402
-from triage.llm import REPO_ROOT  # noqa: E402
+from triage.baseline import VERSION, system_prompt
+from triage.llm import REPO_ROOT
 
 dest = REPO_ROOT / "prompts" / f"{VERSION}.md"
 dest.parent.mkdir(exist_ok=True)

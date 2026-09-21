@@ -25,7 +25,7 @@ def main() -> int:
         return 0
     DEST.parent.mkdir(parents=True, exist_ok=True)
     print(f"Downloading {URL}")
-    urllib.request.urlretrieve(URL, DEST)  # noqa: S310 - fixed https URL
+    urllib.request.urlretrieve(URL, DEST)
     print(f"Wrote {DEST} ({DEST.stat().st_size / 1e6:.1f} MB)")
     return 0
 

@@ -39,7 +39,7 @@ class Usage:
     calls: int = 0
     latencies_s: list[float] = field(default_factory=list)
 
-    def add(self, other: "Usage") -> None:
+    def add(self, other: Usage) -> None:
         self.input_tokens += other.input_tokens
         self.output_tokens += other.output_tokens
         self.cache_creation_input_tokens += other.cache_creation_input_tokens

@@ -46,7 +46,8 @@ this project to cover what public data does not: multiple issues in one message,
 typos, angry customers, off-topic requests, ambiguity, product safety, account security,
 legal threats and high-value refunds.
 
-Split 60/40 into dev and test. **The test split is held out** and is not used to tune the
+Split into dev (144) and test (108) — a 60/40 target, with per-stratum rounding landing at
+57/43. **The test split is held out** and is not used to tune the
 prompt.
 
 ### Labels are model-drafted

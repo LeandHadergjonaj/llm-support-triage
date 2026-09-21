@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+from itertools import pairwise
 
 from triage.taxonomy import ESCALATION_REASONS, INTENTS, URGENCIES
 
@@ -106,7 +107,7 @@ def calibration(rows: list[dict], bins: tuple[float, ...] = (0.5, 0.7, 0.8, 0.9,
     """Does a confident prediction actually get all three labels right more often?"""
     edges = [0.0, *bins, 1.01]
     out = []
-    for low, high in zip(edges, edges[1:], strict=False):
+    for low, high in pairwise(edges):
         group = [r for r in rows if low <= r["pred"]["confidence"] < high]
         if not group:
             continue

@@ -62,7 +62,7 @@ def _money(rng: random.Random) -> str:
         value = rng.uniform(80, 125)
     else:
         value = rng.uniform(125, 850)
-    return f"{value:.2f}" if rng.random() < 0.4 else str(int(round(value)))
+    return f"{value:.2f}" if rng.random() < 0.4 else str(round(value))
 
 
 def fill_placeholders(text: str, rng: random.Random) -> str:

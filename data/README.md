@@ -104,7 +104,8 @@ Two independent signals on label quality are recorded per ticket:
 
 ## Splits
 
-60/40 dev/test, stratified on strata known before labelling (category for Bitext tickets,
+Dev 144 / test 108 — a 60/40 target, with per-stratum rounding landing at 57/43.
+Stratified on strata known before labelling (category for Bitext tickets,
 hard-case kind for authored ones), seeded at 20260921.
 
 **The test split is held out.** It is not used to tune the prompt. `make eval` runs dev;

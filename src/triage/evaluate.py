@@ -12,8 +12,7 @@ import argparse
 import json
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
-from pathlib import Path
+from datetime import UTC, datetime
 
 from pydantic import ValidationError
 
@@ -94,10 +93,12 @@ def markdown_summary(record: dict) -> str:
         f"- Run at: {meta['started_at']}",
         f"- Tickets: {overall['n']}",
         "",
-        "> Reference labels for urgency and escalation are **model-drafted**, not "
-        f"hand-labelled. {reviewed} of {overall['n']} tickets in this split have been "
-        "corrected by a human. Treat the absolute numbers as provisional; they are "
-        "meaningful mainly as a fixed bar for later versions to beat.",
+        (
+            "> Reference labels for urgency and escalation are **model-drafted**, not "
+            f"hand-labelled. {reviewed} of {overall['n']} tickets in this split have been "
+            "corrected by a human. Treat the absolute numbers as provisional; they are "
+            "meaningful mainly as a fixed bar for later versions to beat."
+        ),
         "",
         "## Headline",
         "",
@@ -117,25 +118,32 @@ def markdown_summary(record: dict) -> str:
         f"| Missed escalations | {esc['missed_escalations']} |",
         f"| Correct non-escalations | {esc['correct_non_escalations']} |",
         "",
-        f"Precision {esc['precision']}, recall {esc['recall']}. "
-        f"Reference escalation rate {esc['gold_escalation_rate']:.1%}, "
-        f"predicted {esc['predicted_escalation_rate']:.1%}.",
+        (
+            f"Precision {esc['precision']}, recall {esc['recall']}. "
+            f"Reference escalation rate {esc['gold_escalation_rate']:.1%}, "
+            f"predicted {esc['predicted_escalation_rate']:.1%}."
+        ),
         "",
         "## Cost and latency",
         "",
         f"- Total cost: **${usage['total_cost_usd']:.4f}** for {usage['calls']} tickets",
         f"- Cost per ticket: ${usage['cost_per_ticket_usd']:.6f}",
-        f"- Latency: mean {usage['latency_mean_s']}s, p50 {usage['latency_p50_s']}s, "
-        f"p95 {usage['latency_p95_s']}s (at {meta['workers']} concurrent requests)",
-        f"- Cache: {usage['cache_read_input_tokens']} tokens read from cache, "
-        f"{usage['cache_creation_input_tokens']} written",
+        (
+            f"- Latency: mean {usage['latency_mean_s']}s, p50 {usage['latency_p50_s']}s, "
+            f"p95 {usage['latency_p95_s']}s (at {meta['workers']} concurrent requests)"
+        ),
+        (
+            f"- Cache: {usage['cache_read_input_tokens']} tokens read from cache, "
+            f"{usage['cache_creation_input_tokens']} written"
+        ),
         "",
         "## Easy vs hard",
         "",
         "| Slice | n | Intent | Urgency | Escalation |",
         "|---|---:|---:|---:|---:|",
     ]
-    for key, label in (("bitext_only", "Bitext tickets"), ("hard_cases_only", "Authored hard cases")):
+    slices = (("bitext_only", "Bitext tickets"), ("hard_cases_only", "Authored hard cases"))
+    for key, label in slices:
         if key in scores:
             s = scores[key]
             lines.append(
@@ -144,7 +152,13 @@ def markdown_summary(record: dict) -> str:
             )
 
     if scores.get("by_hard_case_kind"):
-        lines += ["", "### By hard-case kind", "", "| Kind | n | Intent | Urgency | Escalation |", "|---|---:|---:|---:|---:|"]
+        lines += [
+            "",
+            "### By hard-case kind",
+            "",
+            "| Kind | n | Intent | Urgency | Escalation |",
+            "|---|---:|---:|---:|---:|",
+        ]
         for kind, s in scores["by_hard_case_kind"].items():
             lines.append(
                 f"| {kind} | {s['n']} | {s['intent_accuracy']:.0%} | "
@@ -153,10 +167,22 @@ def markdown_summary(record: dict) -> str:
 
     conf = overall["intent_confusions"]
     if conf:
-        lines += ["", "## Top intent confusions", "", "| Reference | Predicted | n |", "|---|---|---:|"]
+        lines += [
+            "",
+            "## Top intent confusions",
+            "",
+            "| Reference | Predicted | n |",
+            "|---|---|---:|",
+        ]
         lines += [f"| {c['gold']} | {c['predicted']} | {c['n']} |" for c in conf]
 
-    lines += ["", "## Confidence calibration", "", "| Confidence | n | All three correct |", "|---|---:|---:|"]
+    lines += [
+        "",
+        "## Confidence calibration",
+        "",
+        "| Confidence | n | All three correct |",
+        "|---|---:|---:|",
+    ]
     for bucket in overall["confidence_calibration"]:
         lines.append(f"| {bucket['confidence_range']} | {bucket['n']} | {bucket['all_three_correct']:.1%} |")
 
@@ -184,7 +210,7 @@ def main() -> int:
     if args.limit:
         tickets = tickets[: args.limit]
 
-    started = datetime.now(timezone.utc)
+    started = datetime.now(UTC)
     print(f"Scoring {len(tickets)} {args.split} tickets with {args.model} (effort={args.effort})")
     rows, usage = run(tickets, args.model, args.workers, args.effort)
 

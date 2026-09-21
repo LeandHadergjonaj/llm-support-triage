@@ -19,7 +19,6 @@ import csv
 import json
 import random
 import sys
-from pathlib import Path
 
 from triage.llm import REPO_ROOT
 
@@ -63,19 +62,21 @@ def select(rows: list[dict], n: int, seed: int) -> list[tuple[dict, str]]:
     picked: dict[str, tuple[dict, str]] = {}
 
     def take(candidates: list[dict], reason: str, quota: int) -> None:
+        """Fill up to `quota` from `candidates`, never exceeding the overall budget."""
         pool = [r for r in candidates if r["id"] not in picked]
         rng.shuffle(pool)
-        for row in pool[:quota]:
+        for row in pool[: min(quota, n - len(picked))]:
             picked[row["id"]] = (row, reason)
 
+    # Priority order. Controls come last and only fill whatever budget is left, so a
+    # targeted pick is never displaced by a random one.
     take([r for r in rows if r.get("intent_disagreement")], "drafter disagreed with Bitext intent", 8)
     take([r for r in rows if r.get("drafter_uncertain")], "drafter flagged uncertain", 8)
     take([r for r in rows if r["labels"]["escalate"]], "escalation (rare, high-leverage)", 7)
     take([r for r in rows if r["hard_case"]], "authored hard case", 4)
     take([r for r in rows if not r["labels"]["escalate"] and not r["hard_case"]], "random control", n)
 
-    ordered = sorted(picked.values(), key=lambda pair: pair[0]["id"])
-    return ordered[:n]
+    return sorted(picked.values(), key=lambda pair: pair[0]["id"])
 
 
 def main() -> int:

@@ -10,7 +10,6 @@ from __future__ import annotations
 import csv
 import json
 import sys
-from pathlib import Path
 
 from triage.llm import REPO_ROOT
 from triage.taxonomy import ESCALATION_REASONS, INTENTS, URGENCIES

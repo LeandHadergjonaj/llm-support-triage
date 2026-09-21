@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from triage.baseline import system_prompt
 from triage.labeler import BRIEF_PATH
@@ -51,7 +52,7 @@ def test_prediction_schema_is_strict():
 
 
 def test_prediction_rejects_labels_outside_the_taxonomy():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         Prediction(
             intent="not_a_category",
             urgency="low",

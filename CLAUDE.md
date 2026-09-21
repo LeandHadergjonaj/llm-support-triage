@@ -102,6 +102,11 @@ version**.
     reconciliation checks, the same-model and reviewed-by-Claude caveats, `DECISIONS.md`,
     and the tests that cover all of these. When the ladder and this exception conflict,
     the exception wins.
+11. **Commit at the end of every piece of work; push to GitHub at the end of every
+    phase.** A piece of work is done when its tests pass and, for anything touching the
+    baseline, the eval reproduces — commit it then, don't batch unrelated changes into
+    one commit. Pushing is coarser: it happens when a phase (as tracked in "Where we
+    are") closes, not after every commit.
 
 ## Stack
 

@@ -1,0 +1,167 @@
+{
+  "at": "2026-09-21T15:19:58+00:00",
+  "brief_version": "v3",
+  "by": "claude-opus-5 (Anthropic)",
+  "is_a_human_pass": false,
+  "what_this_is": "A mechanical application of two rules from brief v2 to every ticket they match. It is a consistency mechanism, not a check: it finds only the errors its rules describe, and a swept ticket is not `reviewed`.",
+  "rules": {
+    "out_of_scope_contradiction": "v2 change 3 (D-008)",
+    "pre_dispatch_window": "v2 change 4 (D-009)",
+    "account_admin_no_live_order": "v3 (D-018 / D-020)"
+  },
+  "counts": {
+    "account_admin_no_live_order": 10
+  },
+  "changes": [
+    {
+      "id": "hl-0030",
+      "pattern": "account_admin_no_live_order",
+      "brief_change": "v3 (D-018 / D-020)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "low"
+      },
+      "note": "Upstream intent `change_shipping_address`: account administration blocking nothing already paid for, which brief v3 §4 makes `low`. Names no live order.",
+      "text": "there is a problem correcting the delivery address",
+      "previously_reviewed": false,
+      "split": "dev"
+    },
+    {
+      "id": "hl-0032",
+      "pattern": "account_admin_no_live_order",
+      "brief_change": "v3 (D-018 / D-020)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "low"
+      },
+      "note": "Upstream intent `change_shipping_address`: account administration blocking nothing already paid for, which brief v3 §4 makes `low`. Names no live order.",
+      "text": "need help to modify the shipping address",
+      "previously_reviewed": false,
+      "split": "dev"
+    },
+    {
+      "id": "hl-0088",
+      "pattern": "account_admin_no_live_order",
+      "brief_change": "v3 (D-018 / D-020)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "low"
+      },
+      "note": "Upstream intent `recover_password`: account administration blocking nothing already paid for, which brief v3 §4 makes `low`. Names no live order.",
+      "text": "i want help to reset my user profile pin code",
+      "previously_reviewed": false,
+      "split": "dev"
+    },
+    {
+      "id": "hl-0173",
+      "pattern": "account_admin_no_live_order",
+      "brief_change": "v3 (D-018 / D-020)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "low"
+      },
+      "note": "Upstream intent `recover_password`: account administration blocking nothing already paid for, which brief v3 §4 makes `low`. Names no live order.",
+      "text": "I forgot my profile key, help me retrieving it",
+      "previously_reviewed": false,
+      "split": "dev"
+    },
+    {
+      "id": "hl-0189",
+      "pattern": "account_admin_no_live_order",
+      "brief_change": "v3 (D-018 / D-020)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "low"
+      },
+      "note": "Upstream intent `recover_password`: account administration blocking nothing already paid for, which brief v3 §4 makes `low`. Names no live order.",
+      "text": "I have lost my account access key, I need help to reset it",
+      "previously_reviewed": false,
+      "split": "dev"
+    },
+    {
+      "id": "hl-0245",
+      "pattern": "account_admin_no_live_order",
+      "brief_change": "v3 (D-018 / D-020)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "low"
+      },
+      "note": "Upstream intent `registration_problems`: account administration blocking nothing already paid for, which brief v3 §4 makes `low`. Names no live order.",
+      "text": "I want to inform of a registration issue",
+      "previously_reviewed": false,
+      "split": "dev"
+    },
+    {
+      "id": "hl-0250",
+      "pattern": "account_admin_no_live_order",
+      "brief_change": "v3 (D-018 / D-020)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "low"
+      },
+      "note": "Upstream intent `registration_problems`: account administration blocking nothing already paid for, which brief v3 §4 makes `low`. Names no live order.",
+      "text": "want assistance reportingan issue with a sign-up",
+      "previously_reviewed": false,
+      "split": "dev"
+    },
+    {
+      "id": "hl-0007",
+      "pattern": "account_admin_no_live_order",
+      "brief_change": "v3 (D-018 / D-020)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "low"
+      },
+      "note": "Upstream intent `set_up_shipping_address`: account administration blocking nothing already paid for, which brief v3 §4 makes `low`. Names no live order.",
+      "text": "erorr submitting the new shipping address",
+      "previously_reviewed": false,
+      "split": "test"
+    },
+    {
+      "id": "hl-0114",
+      "pattern": "account_admin_no_live_order",
+      "brief_change": "v3 (D-018 / D-020)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "low"
+      },
+      "note": "Upstream intent `change_shipping_address`: account administration blocking nothing already paid for, which brief v3 §4 makes `low`. Names no live order.",
+      "text": "I need help modifying the delivery address",
+      "previously_reviewed": false,
+      "split": "test"
+    },
+    {
+      "id": "hl-0191",
+      "pattern": "account_admin_no_live_order",
+      "brief_change": "v3 (D-018 / D-020)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "low"
+      },
+      "note": "Upstream intent `recover_password`: account administration blocking nothing already paid for, which brief v3 §4 makes `low`. Names no live order.",
+      "text": "want help to restore my pwd",
+      "previously_reviewed": false,
+      "split": "test"
+    }
+  ]
+}

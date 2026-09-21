@@ -4,7 +4,7 @@
 for the triage label set. Policy documents and the orders database in later steps must be
 consistent with it.*
 
-**Version: v2** — 2026-09-21. Changelog in §7. Every label, every prompt and every result
+**Version: v3** — 2026-09-21. Changelog in §7. Every label, every prompt and every result
 in this repository must state which version of this brief it was produced under.
 
 ---
@@ -121,6 +121,19 @@ Two qualifiers:
   shipping address to my account" do not — those are administrative and take their urgency
   from the ordinary test.
 
+### Account administration with nothing paid for at stake
+
+The ordinary test in the table above already answers this, but it is easy to read a locked
+account or a stuck sign-up as urgent because the customer is annoyed or stuck, not because
+anything owed or paid for is at risk. **Account-level administration that blocks nothing the
+customer has already paid for — a password or PIN reset, a registration or sign-up problem,
+or delivery-address administration with no live order behind it — is `low`, not `normal`,
+however the customer phrases the inconvenience.** `normal` requires being blocked on
+something owed or paid for; being unable to log in, or a sign-up form erroring, is neither —
+there is no order, refund or delivery it is holding up. Where the same request *does* name a
+live order (see the pre-dispatch window above), the pre-dispatch rule takes over and can
+still make it `high`.
+
 Worked examples:
 
 - `high` — "the glass shade cracked and cut my hand", "someone has changed my address and
@@ -130,7 +143,8 @@ Worked examples:
   hasn't arrived", "the bedside table arrived with a leg missing".
 - `low` — "what are your delivery options to Scotland", "how do I add some items to order
   52020", "please take me off the newsletter", "do you accept Amex", "just wanted to say the
-  cushions are lovely".
+  cushions are lovely", "I've forgotten my password and can't log in", "there's an error
+  submitting my new delivery address".
 
 ## 5. Escalation rules
 
@@ -165,6 +179,22 @@ gesture. It classifies and routes. Anything that moves money or changes an order
 action in every version of this system.
 
 ## 7. Changelog
+
+### v3 — 2026-09-21
+
+One clarification, settling `DECISIONS.md` D-018: an account-level admin task that blocks
+nothing already paid for (a password/PIN reset, a registration or sign-up problem, or
+delivery-address administration with no live order) is `low`, not `normal`. This was the
+single largest source of split labels in the set — the labels drew both ways on
+near-identical wording (e.g. "help me retrieve my password" filed as `low` in most cases and
+`normal` in a few) with no rule in the brief to settle it, and it explains 12 of the
+baseline's 16 remaining urgency errors at brief v2. This is a simulated-client decision, not
+one drawn from a real conversation: read literally, the brief's own `normal` definition
+already requires being blocked on something owed or paid for, which none of these tickets
+are, so the change makes explicit what the definition already implied rather than adding a
+new rule. Applied to the label set by a rule sweep restricted to the four upstream dataset
+intents the inconsistency actually occurred in (`recover_password`, `registration_problems`,
+`change_shipping_address`, `set_up_shipping_address`) — see `DECISIONS.md` D-020.
 
 ### v2 — 2026-09-21
 

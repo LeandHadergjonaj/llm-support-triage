@@ -18,7 +18,7 @@ verified none. Measuring what is left is the job of the fresh random review bloc
 
 It is run by a model. No part of it is a human pass.
 
-THE TWO RULES
+THE THREE RULES
 
 `out_of_scope_contradiction` (brief v2 change 3, from D-008)
     A ticket escalated with reason `out_of_scope` whose intent is one of the other ten
@@ -33,6 +33,16 @@ THE TWO RULES
     text, because that label is dataset-derived rather than a judgement of mine, which
     is what keeps this a sweep rather than a re-labelling. Two carve-outs from the brief:
     additions stay `low`, and the ask must presuppose a live order.
+
+`account_admin_no_live_order` (brief v3, from D-018 / D-020)
+    An account-administration ticket labelled `normal` that blocks nothing already paid
+    for. Matched on the upstream Bitext intent (`recover_password`,
+    `registration_problems`, `change_shipping_address`, `set_up_shipping_address`) --
+    the four intents D-018 found the inconsistency in -- rather than on free text, for
+    the same reason as `pre_dispatch_window`: the intent is dataset-derived, so matching
+    on it cannot smuggle in a per-ticket reading. Guarded on the same "does the ticket
+    name a live order" check `pre_dispatch_window` uses, so the two rules can never
+    disagree about the same ticket.
 
 Everything the sweep changes is written to results/sweep_<stamp>.json, with the previous
 labels, so any of it can be argued with or undone.
@@ -67,6 +77,13 @@ ADDITION = re.compile(r"\badd(?:ing|s)?\b", re.IGNORECASE)
 # Brief v2 §4: "The ask must presuppose a live order." Every Bitext order-change ticket
 # should name one; this is the guard that proves it rather than assuming it.
 NAMES_AN_ORDER = re.compile(r"\b(order|purchase)\b", re.IGNORECASE)
+
+# Brief v3 §4: the four upstream Bitext intents D-018 found split between `low` and
+# `normal` with no rule to settle it -- account administration with no purchase at stake.
+ACCOUNT_ADMIN_INTENTS = frozenset({
+    "recover_password", "registration_problems",
+    "change_shipping_address", "set_up_shipping_address",
+})
 
 
 def _clean(text: str) -> str:
@@ -108,9 +125,25 @@ def pre_dispatch_window(ticket: dict) -> tuple[dict, str] | None:
     return {"urgency": "high"}, note
 
 
+def account_admin_no_live_order(ticket: dict) -> tuple[dict, str] | None:
+    """Brief v3: account admin blocking nothing paid for is `low`, not `normal`."""
+    if ticket.get("bitext_intent") not in ACCOUNT_ADMIN_INTENTS:
+        return None
+    if ticket["labels"]["urgency"] != "normal":
+        return None
+    if NAMES_AN_ORDER.search(ticket["text"]):
+        return None  # names a live order -- pre_dispatch_window's territory, not this rule
+    note = (
+        f"Upstream intent `{ticket['bitext_intent']}`: account administration blocking "
+        f"nothing already paid for, which brief v3 §4 makes `low`. Names no live order."
+    )
+    return {"urgency": "low"}, note
+
+
 RULES = {
     "out_of_scope_contradiction": (out_of_scope_contradiction, "v2 change 3 (D-008)"),
     "pre_dispatch_window": (pre_dispatch_window, "v2 change 4 (D-009)"),
+    "account_admin_no_live_order": (account_admin_no_live_order, "v3 (D-018 / D-020)"),
 }
 
 

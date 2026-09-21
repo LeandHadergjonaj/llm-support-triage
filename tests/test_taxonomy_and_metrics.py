@@ -491,6 +491,13 @@ def test_baseline_prompt_carries_the_v2_clarifications():
     assert "`product_safety` always implies `high`" in prompt  # change 5
 
 
+def test_baseline_prompt_carries_the_v3_clarification():
+    """Brief v3 (D-018/D-020): account admin blocking nothing paid-for is `low`."""
+    prompt = system_prompt().lower()
+    assert "password or pin reset" in prompt
+    assert "blocked on something owed or paid for" in prompt
+
+
 def test_sweep_rules_do_what_the_brief_says():
     from triage.sweep import out_of_scope_contradiction, pre_dispatch_window
 
@@ -543,6 +550,28 @@ def test_sweep_rules_do_what_the_brief_says():
         "escalate": True,
         "escalation_reasons": ["product_safety"],
     }
+
+
+def test_account_admin_sweep_rule_does_what_brief_v3_says():
+    from triage.sweep import account_admin_no_live_order
+
+    def ticket(**kw):
+        base = {
+            "id": "hl-0001",
+            "text": "I forgot my password and can't log in",
+            "bitext_intent": "recover_password",
+            "labels": {"urgency": "normal"},
+        }
+        return base | kw
+
+    # A recognised admin intent at `normal`, no order named -> down to `low`.
+    assert account_admin_no_live_order(ticket())[0] == {"urgency": "low"}
+    # Not one of the four intents this rule is scoped to -> untouched.
+    assert account_admin_no_live_order(ticket(bitext_intent="track_order")) is None
+    # Already `low` -> nothing to change.
+    assert account_admin_no_live_order(ticket(labels={"urgency": "low"})) is None
+    # Names a live order -> pre_dispatch_window's territory, not this rule's.
+    assert account_admin_no_live_order(ticket(text="update the address on order 51986")) is None
 
 
 # --- Review rounds sample different populations and must not be pooled -----

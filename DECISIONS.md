@@ -11,6 +11,50 @@ differently — not every implementation choice.
 
 ## 2026-09-21
 
+### D-020 — D-018 settled: account admin blocking nothing paid-for is `low` (simulated client decision)
+
+Phase 2 opened with D-018 still unresolved: the client brief was silent on whether an
+account-level admin task (password reset, sign-up problem, address administration with no
+order behind it) is `low` or `normal`, and the drafted labels split both ways on
+near-identical wording. There is no real client to ask, so — as rule 9 directs when the
+brief is silent — I made the call myself, as a reasonable client would, and wrote it down
+rather than leaving the ambiguity in place for the router to inherit.
+
+**The call:** these tasks are `low`. Reasoning, not preference: the brief's own definition
+of `normal` already requires the customer to be "blocked on something they are owed or have
+paid for" (§4). None of the four affected task types — a password/PIN reset, a
+registration/sign-up problem, or address administration with no live order — blocks
+anything owed or paid for. A locked-out customer is stuck and possibly annoyed, but nothing
+they have bought is at risk or delayed. Reading the existing definition literally settles
+this without inventing a new rule, which is why it goes in as a *clarification* (brief v3)
+rather than a policy change. It also matches the pattern already visible in the data: D-018
+itself noted the baseline was predicting `low` on the disputed `change_shipping_address`
+tickets and was "arguably right" — the drafted labels were the noisy signal, not the
+model's judgement.
+
+**Applied to the label set** via a new rule sweep, `account_admin_no_live_order` (see
+`src/triage/sweep.py`), matched on the four upstream Bitext intents D-018 identified
+(`recover_password`, `registration_problems`, `change_shipping_address`,
+`set_up_shipping_address`) and guarded on the same "does the ticket name a live order"
+check `pre_dispatch_window` already uses, so the two rules can never disagree about the
+same ticket. 10 labels changed (7 dev, 3 test): `hl-0007`, `hl-0030`, `hl-0032`, `hl-0088`,
+`hl-0114`, `hl-0173`, `hl-0189`, `hl-0191`, `hl-0245`, `hl-0250` — all `normal` -> `low`.
+Same caveat as every sweep: this is a consistency mechanism, not a check. None of these ten
+tickets become `reviewed`.
+
+**Left alone on purpose:** `hl-0042`, an authored hard case (a fully locked-out account,
+`normal`) that sits in the same territory but carries no `bitext_intent`, so the mechanical
+rule does not reach it and I did not hand-correct it. It was authored to test the
+`account_security` escalation carve-out, not this urgency question, and hand-picking single
+tickets outside a rule's stated scope is exactly the drift the sweep mechanism exists to
+avoid — see `src/triage/sweep.py`'s own docstring. It is a candidate for the next review
+round, not for this sweep.
+
+Re-ran the baseline (`baseline_v1`, `gpt-5.6-terra`, effort `high`) against brief v3 on both
+splits. This is the **new baseline of record** — see the current-results update in
+`README.md` — and, per rule 5, a new bar rather than evidence of improvement: the label set
+and the prompt moved together, same as the v1 -> v2 transition (`DECISIONS.md` D-016).
+
 ### D-019 — Adopted Ponytail, audited the repo, cut two dead symbols
 
 Installed the Ponytail plugin (intensity `full`) and added it as standing rule 10 in

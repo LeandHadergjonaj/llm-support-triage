@@ -108,81 +108,85 @@ kind, because an average over both hides the only interesting part.
 ## Baseline results
 
 `baseline_v1` on `gpt-5.6-terra` at `effort=high`, run 2026-09-21 **against client brief
-v2**, scored against labels as corrected by the second-opinion review and the brief v2
-rule sweep. Full records in `results/`; `results/latest_dev.json` is the bar later
-versions must beat.
+v3**, scored against labels as corrected by the second-opinion review, the brief v2 rule
+sweep, and the brief v3 `account_admin_no_live_order` sweep. Full records in `results/`;
+`results/latest_dev.json` is the bar later versions must beat.
 
 > ### These are not an improvement over the previous run
 >
-> Brief v2 spelled out the pre-dispatch window, which was the baseline's largest failure
-> mode. Both the **labels** and the **prompt** moved at once, so `high` urgency recall
-> going from 50% to 100% measures the policy getting clearer, not the system getting
-> better. A system cannot be marked against policy it was never given — but the number
-> that results is **a new bar, not evidence of progress**. Only v2-vs-v2 comparisons say
-> anything about design. Every result record carries `run.brief_version`; the brief v1
-> runs stay in `results/` under their timestamps. See `DECISIONS.md` D-016.
+> Brief v3 settles `DECISIONS.md` D-018 — a simulated-client call on whether account admin
+> that blocks nothing paid for is `low` or `normal` — and moved both the **labels** and the
+> **prompt** at once, the same as v1 → v2. A system cannot be marked against policy it was
+> never given, but the number that results is **a new bar, not evidence of progress**. Only
+> v3-vs-v3 comparisons (the router, next) say anything about design. Every result record
+> carries `run.brief_version`; the brief v1 and v2 runs stay in `results/` under their
+> timestamps. See `DECISIONS.md` D-020.
 
 > **These are still largely self-agreement figures.** The same model drafted the urgency
 > and escalation labels it is scored against, and **no label has been checked by a
 > person** — 85 of 252 tickets have been through a second-opinion review by
-> `claude-opus-5`, a different model family, and 13 more had a rule from the brief
-> applied to them without being re-read. Intent is the partial exception: for the 216
-> Bitext tickets it comes from a deterministic mapping. Read these as a fixed bar for
-> later versions, not as a measure of how good the triage is.
+> `claude-opus-5`, a different model family, 13 more had a brief v2 rule applied to them
+> without being re-read, and 10 more a brief v3 rule, also without being re-read. Intent is
+> the partial exception: for the 216 Bitext tickets it comes from a deterministic mapping.
+> Read these as a fixed bar for later versions, not as a measure of how good the triage is.
 
-Columns marked *v1* are the previous baseline of record, kept for context only — they
-were scored against brief v1 labels with a brief v1 prompt and are **not** a like-for-like
-comparison.
+Columns marked *v2* are the previous baseline of record, kept for context only — they were
+scored against brief v2 labels with a brief v2 prompt and are **not** a like-for-like
+comparison. (Brief v1 numbers are in `results/` under their timestamps and are no longer
+carried in this table.)
 
-| Metric | Dev (144) | Dev, v1 | Test (108) | Test, v1 |
+| Metric | Dev (144) | Dev, v2 | Test (108) | Test, v2 |
 |---|---:|---:|---:|---:|
-| Intent accuracy | 95.1% | 93.8% | 96.3% | 97.2% |
-| Urgency accuracy | 95.1% | 91.7% | 91.7% | 91.7% |
-| Urgency macro recall | 94.5% | 77.7% | 92.4% | 82.4% |
-| — always predict `low` | 68.8% acc / 33.3% macro | 69.4% / 33.3% | 72.2% acc / 33.3% macro | 70.4% / 33.3% |
-| Escalation accuracy | 98.6% | 98.6% | 98.2% | 98.2% |
-| Escalation precision / recall | 0.86 / 1.00 | 0.88 / 1.00 | 0.85 / 1.00 | 0.85 / 1.00 |
-| All three correct | 91.0% | 86.8% | 88.9% | 89.8% |
-| Escalations in the labels | 12 | 14 | 11 | 11 |
-| Missed escalations | 0 | 0 | 0 | 0 |
-| Unnecessary escalations | 2 | 2 | 2 | 2 |
-| Cost per ticket | $0.00128 | $0.00112 | $0.00125 | $0.00116 |
-| Latency p50 / p95 | 2.1s / 3.3s | 2.1s / 2.8s | 2.1s / 3.0s | 2.1s / 3.1s |
+| Intent accuracy | 95.1% | 95.1% | 96.3% | 96.3% |
+| Urgency accuracy | 99.3% | 95.1% | 96.3% | 91.7% |
+| Urgency macro recall | 99.7% | 94.5% | 96.8% | 92.4% |
+| — always predict `low` | 73.6% acc / 33.3% macro | 68.8% / 33.3% | 75.0% acc / 33.3% macro | 72.2% / 33.3% |
+| Escalation accuracy | 97.9% | 98.6% | 99.1% | 98.2% |
+| Escalation precision / recall | 0.85 / 0.92 | 0.86 / 1.00 | 0.92 / 1.00 | 0.85 / 1.00 |
+| All three correct | 94.4% | 91.0% | 93.5% | 88.9% |
+| Escalations in the labels | 12 | 12 | 11 | 11 |
+| Missed escalations | 1 | 0 | 0 | 0 |
+| Unnecessary escalations | 2 | 2 | 1 | 2 |
+| Cost per ticket | $0.00129 | $0.00128 | $0.00131 | $0.00125 |
+| Latency p50 / p95 | 2.1s / 3.3s | 2.1s / 3.3s | 2.1s / 3.2s | 2.1s / 3.0s |
 
-The only movement that is not explained by the brief change is intent, which no label
-change touched at all: +1.4 points on dev and **−0.9 on test**, both inside the noise a
-one- or two-ticket swing produces at these sizes. `all three correct` falls on test for
-the same reason plus `hl-0093`, a label I corrected against the baseline's answer.
+Urgency is the number the brief change was aimed at, and it moved: macro recall 94.5% →
+99.7% on dev, 92.4% → 96.8% on test. Escalation moved the other way on dev — one refund
+threshold escalation was missed this run (`refund_over_threshold`, gold 3, predicted 2) —
+which is a fresh API call, not the labels: gold escalations on dev are unchanged at 12,
+brief v3 touched no escalation label. At n=12 that single miss is the entire movement, and
+it is inside the noise a fresh sample of reasoning-model calls produces at this size — see
+`DECISIONS.md` D-020 and the caveats below on small-n slices.
 
 Per-class urgency, which is the part worth reading:
 
 | Class | Dev support | Dev recall | Dev precision | Test support | Test recall | Test precision |
 |---|---:|---:|---:|---:|---:|---:|
 | `high` | 15 | 100.0% | 100.0% | 10 | 100.0% | 100.0% |
-| `normal` | 30 | 86.7% | 89.7% | 20 | 85.0% | 73.9% |
-| `low` | 99 | 97.0% | 96.0% | 78 | 92.3% | 96.0% |
+| `normal` | 23 | 100.0% | 95.8% | 17 | 94.1% | 84.2% |
+| `low` | 106 | 99.1% | 100.0% | 81 | 96.3% | 98.7% |
 
 **`high` urgency is measured on 15 tickets on dev and 10 on test.** At n=15 a single miss
 is 6.7 points, and the 95% Wilson interval around 100% recall still runs from 79.6% to
 100% (72.3% to 100% at n=10). Perfect recall here means "no misses in fifteen", which is
-encouraging and is not the same as reliable. The same caveat applies to escalation (12 and 11 in the reference) and to every
-hard-case slice, which are 2 tickets each. Only `low`, and intent overall, have samples
-where a couple of points mean anything.
+encouraging and is not the same as reliable. The same caveat applies to escalation (12 and
+11 in the reference) and to every hard-case slice, which are 2 tickets each. Only `low`,
+`normal` (now that D-018 has settled it), and intent overall have samples where a couple
+of points mean anything.
 
 ### What is still wrong
 
-- **All four unnecessary escalations are still spurious `out_of_scope`**, and brief v2 did
-  not fix them: `hl-0112`, `hl-0219`, `hl-0005`, `hl-0034`, every one a "make a claim /
-  file a complaint / write a comment" ticket. The v2 clarification targeted unfamiliar
-  *product and tier names*; these fail on a different trigger — "claim" and "reclamation"
-  reading as a legal or regulatory process rather than as a customer complaint. A
-  candidate v3 clarification, logged but not made.
-- **Twelve of the sixteen remaining urgency errors are one open question**: whether an
-  account-level admin task that blocks nothing paid for is `low` or `normal`. Four are
-  password or PIN resets, four are sign-up failures, four are address edits with no order
-  behind them. The labels are split on it and so is the model, in both directions — the
-  disagreement is with the brief's silence, not with the model. `DECISIONS.md` D-018.
-- Escalation recall is 1.00 on both splits and no escalation is missed.
+- **Spurious `out_of_scope` escalations remain**, unchanged by brief v3: 2 of dev's 4
+  `out_of_scope`-reason predictions and 1 of test's 3 have no matching gold reason, every
+  one a "make a claim / file a complaint" ticket read as a legal or regulatory process
+  rather than a customer complaint. Brief v2's clarification targeted unfamiliar *product
+  and tier names*; this is a different trigger, on different vocabulary, and D-018 was the
+  higher-value fix to make first. It is now the router's first target — see `DECISIONS.md`.
+- D-018's account-admin question is settled (brief v3, `DECISIONS.md` D-020); it is no
+  longer an open question in this table.
+- Escalation recall on dev dropped to 0.92 this run (11/12, one missed
+  `refund_over_threshold`) — noise at n=12, not a labels-vs-prompt effect; test recall
+  stayed at 1.00 (11/11).
 
 ## Label quality
 

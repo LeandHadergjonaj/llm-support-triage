@@ -93,6 +93,12 @@ has been dispatched, assume the window is still open.
 from order 46399" do; "how do I update my delivery address" and "I want to add a second \
 shipping address" do not -- those are administrative.
 
+Account-level administration that blocks nothing the customer has already paid for -- a \
+password or PIN reset, a registration or sign-up problem, or delivery-address \
+administration with no live order behind it -- is `low`, not `normal`, however the \
+customer phrases the inconvenience. `normal` requires being blocked on something owed or \
+paid for; being unable to log in or a sign-up form erroring is neither.
+
 ## Escalation
 
 Escalating means a human handles the ticket and no automated reply is sent. Set \

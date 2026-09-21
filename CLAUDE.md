@@ -84,10 +84,33 @@ judgements, which says the judge catches clear-cut violations reliably, not that
 tolerant of badly-worded criteria (it isn't — that's what the two post-test findings show).
 Phase cost $0.2949; project-to-date $2.3860 (`make spend`). See `DECISIONS.md` D-024.
 
-Deliberately *not* built yet: the human review queue UI and deployment (Phase 4). Each is
-a later step and each will be measured against the baseline recorded in `results/` — **at
-the same brief version** — and the answer eval, now that something exists to run it
-against (`results/latest_answerer_{dev,test}.json`).
+**Phase 4 complete: the human review queue.** Part 1 tidied up Phase 3b's three named
+findings and settled brief §5's stated-vs-record question — brief moves to **v4**: a
+stated-vs-record mismatch still escalates on the stated figure (triage never sees the
+order record), but the record governs what is said once someone has it; corrected
+`hl-a0012`'s `must_handle` (self → human, matching what the router already did) and
+dropped two backwards-phrased `answers_test.jsonl` criteria (`hl-0011`, `hl-0236`, same
+defect class as D-023). **`data/eval/answers_test.jsonl` is now a seen set** — required
+fact coverage on the existing test candidates moves 83.87% → 90.62%, reported as
+`test (seen)`, never blended with the original held-out 83.87%. See `DECISIONS.md` D-025.
+
+Part 2: `src/triage/queue_app.py`, a small Flask app over a SQLite database
+(`data/queue/queue.db`), built from Phase 3b's own answerer candidates rather than
+reinventing them (`src/triage/build_queue_data.py` — 11 new API calls, one per
+human-routed ticket, for a suggested customer-facing draft reply Phase 3b deliberately
+never wrote). Every human-routed ticket becomes a ready-to-act package: the ticket, why it
+was escalated, the verified order-facts lookup, the relevant policy document(s), the
+router's own handover note, and a suggested reply the agent approves as-is, edits, or
+rejects with a note — every decision recorded in `reviews`. A separate `/spotcheck` view
+lists every self-handled ticket read-only with a flag/notes field, for auditing replies
+the system already "sent" on its own. `/stats` reports acceptance/edit/reject rates and
+the spot-check flag rate. `make queue-data` then `make queue`; nothing is ever sent to a
+real customer — approving only records a decision. Phase 4 total spend: **$0.0626**
+(judge re-scoring + 11 draft-reply calls), project-to-date **$2.4486**. See `DECISIONS.md`
+D-025 and D-026.
+
+Deliberately *not* built: Phase 5 (integration and deployment). SQLite and Flask were
+chosen to make that step easy, not to pre-empt it.
 
 ## The rules this project runs on
 
@@ -156,8 +179,11 @@ Python 3.11, OpenAI Python SDK (Responses API), Pydantic for validation, strict
 structured outputs (`text.format`, `strict: true`) so parsing is never the failure mode.
 Model: `gpt-5.6-terra` for both label drafting and the baseline, overridable with
 `TRIAGE_MODEL` or `--model`. The client brief is versioned and `taxonomy.brief_version()`
-reads the version out of it, so every run records which policy it was scored under. No framework — at this stage it is a classification and
-evaluation problem.
+reads the version out of it, so every run records which policy it was scored under. No
+framework for the triage/answering pipeline itself — that stays a classification and
+evaluation problem. Phase 4's review queue is the one exception: Flask (a small dependency,
+justified by needing several routed pages and forms) over SQLite (stdlib `sqlite3`, a
+plain schema with no SQLite-only types, a single-writer workload — no server needed).
 
 All provider-specific code lives in `src/triage/llm.py`; nothing else imports the SDK.
 
@@ -178,6 +204,8 @@ make answer      run the full router+answerer+judge pipeline on dev and score it
 make answer-test run the full pipeline on the held-out test split
 make eval-answers ANSWERS=path.jsonl       score a candidates.jsonl against the DEV answer eval
 make eval-answers-test ANSWERS=path.jsonl  score against the HELD-OUT TEST answer eval
+make queue-data  build the review-queue packages (reuses answerer candidates; ~11 API calls)
+make queue       run the review-queue web app at http://127.0.0.1:5050
 make spend      print total API spend recorded so far
 make test       checks that need no API key
 ```

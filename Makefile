@@ -1,4 +1,4 @@
-.PHONY: setup data smoke review review-round2 import-review import-review-round2 sweep sweep-apply eval eval-test eval-router eval-router-test eval-answers eval-answers-test answer answer-test spend test clean
+.PHONY: setup data smoke review review-round2 import-review import-review-round2 sweep sweep-apply eval eval-test eval-router eval-router-test eval-answers eval-answers-test answer answer-test queue-data queue spend test clean
 
 PY := .venv/bin/python
 
@@ -59,6 +59,12 @@ answer:                    ## Run the full router+answerer+judge pipeline on DEV
 
 answer-test:                ## Run the full pipeline on the HELD-OUT TEST split. Do not use while tuning.
 	$(PY) -m triage.evaluate_answerer --split test
+
+queue-data:                ## Build the review-queue packages (reuses answerer candidates; ~11 API calls)
+	$(PY) -m triage.build_queue_data
+
+queue:                      ## Run the review-queue web app at http://127.0.0.1:5050
+	$(PY) -m triage.queue_app
 
 clean:
 	rm -rf results/*.json results/*.md

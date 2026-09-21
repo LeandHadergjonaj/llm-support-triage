@@ -21,5 +21,8 @@ results/spend_log.jsonl
 # Raw upstream dataset (19 MB; fetched by scripts/fetch_dataset.py)
 data/raw/
 
+# Phase 4 review-queue database: local SQLite, rebuilt by `make queue-data`
+data/queue/*.db
+
 # macOS
 .DS_Store

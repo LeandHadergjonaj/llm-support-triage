@@ -11,6 +11,76 @@ differently — not every implementation choice.
 
 ## 2026-09-21
 
+### D-026 — Phase 4 part 2: the human review queue
+
+**Reuse over regeneration.** The queue is built from Phase 3b's own saved answerer
+candidates (`results/*_answerer_v1_{dev,test}_candidates.jsonl`) -- the router prediction,
+escalation reasons, urgency, confidence, rationale, and (for `human` tickets) the handover
+note were all already generated and paid for; `src/triage/build_queue_data.py` reads them
+rather than re-running the router. The only new work is **one API call per human-routed
+ticket** (11 total: 5 dev + 6 test) for a suggested customer-facing draft reply -- Phase 3b
+deliberately never wrote one for escalated tickets ("the system does not send a reply"),
+but an agent approving/editing/rejecting a draft needs a draft to start from. It reuses
+`answerer.answer_ticket(..., handled_by="self")` verbatim, so the draft is grounded by
+exactly the same `BASE_SYSTEM` rules as every other reply (no invented facts, no promise
+the policy documents don't allow, never claims an account/order action already done) --
+nothing about being a draft relaxes those rules; only human approval decides whether it is
+ever used. Order facts and the policy-document pointer are both free: `order_facts_block`
+already exists and is deterministic, and "relevant policy" is a static 11-intent →
+document lookup table (11 intents, 6 documents -- a dict, not a retrieval system, same
+reasoning as `answerer.py`'s own no-retrieval choice at this scale).
+
+**Storage: SQLite, one file, no server.** A single support agent working a queue is a
+single-writer workload; a real database process would be answering a scaling question this
+prototype does not have. The schema is plain tables with no SQLite-only types, so migrating
+to Postgres in Phase 5 is a driver swap, not a rewrite -- "avoid choices that make
+deployment hard" was read as "don't build something a real deployment would have to
+discard," not as "provision a server now." `packages` (built once, read-only from the
+app's side) is separate from `reviews`/`spot_checks` (written by the agent) so rebuilding
+the former with `--force` can never silently discard review history.
+
+**Web layer: Flask, the one new dependency this phase adds.** Rung 3 of the ladder (stdlib)
+was tried first and rejected: six routed pages with forms and redirects on raw
+`http.server` would be more code, not less, than one small, well-known dependency doing
+exactly that job -- and Flask deploys as ordinarily as anything in Phase 5 would need.
+Templates are inline `render_template_string` calls in `queue_app.py`, not a `templates/`
+folder -- one file, six routes, no reason to split it.
+
+**What "ready-to-act" means here**, per the phase's own ask: `/ticket/<id>` shows the
+ticket, the router's own escalation rationale and reasons, the verified order-facts lookup,
+a link to the relevant policy document(s), the router's original handover note, and the
+suggested reply -- editable in place. Three actions (`approve`, `edit_approve` diffed
+against the suggested text server-side to decide `approved` vs. `edited`, `reject`,
+which requires a note) are recorded in `reviews`; the diff logic is a small pure function
+(`decide_status`, `queue_app.py`) precisely so it has a test that needs no Flask app and no
+database (`tests/test_queue.py`). `/spotcheck` is the separate, read-only audit view the
+phase asked for over self-handled tickets, with its own flag/notes field, so a client could
+sample the system's unattended output before trusting it -- deliberately not merged into
+the approval queue, since spot-checking an already-sent reply is a different action from
+approving one that has not gone out.
+
+**Verified end to end as an agent would use it**, not only through `tests/test_queue.py`:
+ran the app, opened the queue (11 pending), opened a ticket, approved one as-is, edited and
+approved another, rejected a third after confirming the reject-without-a-note path 400s,
+opened a policy-document link, flagged one spot-check and cleared another, and read
+`/stats` back to confirm the counts matched the actions taken. The three human reviews and
+two spot-checks made during that pass were then cleared from `queue.db` before commit --
+they were a walkthrough, not seed data for whoever opens the queue next. `data/queue/*.db`
+is gitignored; `make queue-data` rebuilds it deterministically from `results/`, on top of
+whichever candidates files are newest there.
+
+**Cost.** 11 draft-reply calls on `gpt-5.6-terra`: $0.0308. Combined with D-025's judge
+re-score ($0.0318), **Phase 4 total: $0.0626**; project-to-date **$2.4486** (`make spend`).
+Comfortably under the $2 per-run cap on both runs individually.
+
+**Not built, on purpose (Phase 5's job):** authentication, multi-agent concurrency
+handling (SQLite's single-writer model is adequate for a prototype, not for six agents
+hitting it at once), and deployment itself. **Natural next step:** the D-024 next-step item
+this phase didn't touch -- ground rule 3's scope (does "never claim an account action
+performed" match brief v4's actual §6, or is it broader) -- plus, now that agents will be
+looking at real drafts, whatever the first real review session's edit patterns turn out to
+need that this prototype didn't anticipate.
+
 ### D-025 — Phase 4 part 1: settle the stated-vs-record figure, fix two eval criteria, brief v4
 
 Three items named in the Phase 4 brief as tidy-up from D-024's "next step", all on

@@ -94,6 +94,14 @@ version**.
    choices do not. Go back to the client only for what only they can supply: spend above
    the $2 cap, keys or account access, or a change to what the project is for. Everything
    else: decide, do it, write it down.
+10. **Write the least code that works.** Ponytail-lazy by default: reuse before adding,
+    stdlib before a dependency, no abstraction for one caller, shortest diff that is still
+    correct. Run `/ponytail-review` on your own diff before every commit.
+    **Exception: evaluation rigour is the product and is never simplified away.** That
+    covers the metrics and their confidence intervals, the budget guard and spend log,
+    reconciliation checks, the same-model and reviewed-by-Claude caveats, `DECISIONS.md`,
+    and the tests that cover all of these. When the ladder and this exception conflict,
+    the exception wins.
 
 ## Stack
 

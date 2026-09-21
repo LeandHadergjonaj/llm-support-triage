@@ -11,6 +11,47 @@ differently — not every implementation choice.
 
 ## 2026-09-21
 
+### D-019 — Adopted Ponytail, audited the repo, cut two dead symbols
+
+Installed the Ponytail plugin (intensity `full`) and added it as standing rule 10 in
+`CLAUDE.md`: least code that works, `/ponytail-review` on every diff, with an explicit
+carve-out for evaluation rigour (metrics, CIs, budget guard, spend log, reconciliation
+checks, the same-model and reviewed-by-Claude caveats, `DECISIONS.md`, and the tests
+covering all of that) — that machinery is the product, not overhead, and Ponytail does
+not get to thin it.
+
+Before touching anything: `make test` (38/38 pass) and `--rescore` against both
+`results/latest_dev.json` and `results/latest_test.json` (zero API calls, scores byte-
+identical) — confirmed the baseline of record was reproducible before any edit, so any
+later mismatch would be attributable to the trim.
+
+Ran `/ponytail-audit` over the whole repo (`src/`, `tests/`, `scripts/`, `Makefile`,
+`pyproject.toml`) by reading every file rather than trusting a static-analysis pass —
+`vulture` wasn't installable in the offline venv, and `ruff` found nothing because
+`taxonomy.py`'s two dead symbols are used by nothing, not shadowed or unreachable.
+
+**Cut**, both in `src/triage/taxonomy.py`, both zero-reader dead code:
+- `BITEXT_BACKED_CATEGORIES` — no caller anywhere in `src`/`tests`/`scripts`.
+- `HARD_CASE_KINDS` — no caller; `hard_case_kind` values come straight from
+  `data/hard_cases.jsonl` and nothing validates against this tuple.
+
+**Kept on purpose**, everything else the audit touched: `llm.py`'s budget/spend/pricing
+code, `metrics.py`'s Wilson intervals and macro-recall, `evaluate.py`'s markdown
+caveats and reconciliation, `export_review.py`'s targeted/random sampling split,
+`sweep.py`'s rule provenance, and every test in `test_taxonomy_and_metrics.py` — all
+fall under the rule 10 exception. None of it is an abstraction with one caller or a
+config nobody sets; each piece backs a specific claim the results make (an interval, a
+provenance field, a reconciliation check) and removing it would make the project's own
+numbers less defensible, which is the opposite of what a housekeeping pass is for.
+
+Net: -13 lines (3,652 -> 3,639 across `src/` + `tests/`). Re-ran `make test` and both
+`--rescore` checks after the cut: 38/38 pass, both splits' scores still byte-identical
+to `results/latest_{dev,test}.json`. No OpenAI calls made this session.
+
+The smallness of the diff is itself informative: the project's own rules (8 and 9 in
+particular — the spend guard and the decision log) already push hard against
+unrequested scaffolding, so there was very little left for a lazy-code pass to find.
+
 ### D-018 — Three more urgency inconsistencies found, and deliberately not swept
 
 Round 2 and the re-run between them exposed a third shape of label error, the same shape

@@ -146,18 +146,3 @@ BITEXT_INTENT_TO_CATEGORY: dict[str, str] = {
     "contact_human_agent": "human_agent_request",
     "newsletter_subscription": "marketing_preferences",
 }
-
-# Categories reachable from the Bitext sample, in mapping order.
-BITEXT_BACKED_CATEGORIES: list[str] = list(dict.fromkeys(BITEXT_INTENT_TO_CATEGORY.values()))
-
-HARD_CASE_KINDS: tuple[str, ...] = (
-    "multi_issue",
-    "typos",
-    "angry",
-    "off_topic",
-    "ambiguous",
-    "safety",
-    "security",
-    "legal",
-    "high_value_refund",
-)

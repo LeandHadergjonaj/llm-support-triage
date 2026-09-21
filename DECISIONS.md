@@ -11,6 +11,81 @@ differently — not every implementation choice.
 
 ## 2026-09-21
 
+### D-021 — Router built: same model, a policy layer, a confidence gate — and it does not beat the baseline outside noise
+
+Phase 2's second half: build a triage design that beats the brief-v3 baseline (D-020) on
+the same model and brief, and that knows when to hand a ticket to a human instead of
+guessing. `src/triage/router.py` + `src/triage/evaluate_router.py`; same `gpt-5.6-terra`,
+same brief v3, one call per ticket — the difference is entirely design, not a bigger model.
+
+**What it adds, in order of how mechanical it is:**
+
+1. A prompt clarification for the one failure pattern brief v3 did not touch: "make a
+   claim" / "file a complaint" read as a legal process instead of `feedback_and_complaint`
+   (README "What is still wrong"). Router-only, not folded into the baseline prompt,
+   because it is a design fix for a model failure mode, not a brief ambiguity like D-018 —
+   the brief already classifies these unambiguously.
+2. A deterministic policy layer, `enforce_policy()`, applying the same two invariants
+   `sweep.py` applies to the label set — `product_safety` implies `high`, and the
+   `out_of_scope` reason requires an `out_of_scope` intent — but to the model's live
+   predictions instead of to stored labels. Needs no `bitext_intent`, so unlike
+   `pre_dispatch_window` it is not eval-set-specific and would hold on a real ticket.
+3. A confidence gate, settling the question brief §5 explicitly left open ("how low
+   confidence feeds the review queue is a decision for a later step"): a ticket sent to a
+   human (`sent_to_human`) is now `escalate OR confidence < threshold`, broader than the
+   formal `escalate` field scored against the brief's six reasons.
+
+**Threshold chosen on dev only**, from `evaluate_router.py`'s built-in scan (paid for once,
+re-finalized locally at nine thresholds for free — see `--rescore`): self-handled accuracy
+peaks at **0.7** (96.8% self-handled, 13.9% queued) and climbs no further with a higher
+threshold. Checked why: the three dev tickets the router still gets wrong are all
+high-confidence (0.83, 0.94, 0.98) — confidence is not tracking those errors, so raising
+the bar past 0.7 only queues tickets the model was already right about, for no accuracy
+gain. `0.7` is now `router.CONFIDENCE_THRESHOLD`; never touched after seeing test.
+
+**Results — honest reading, not the one I'd have preferred:**
+
+| | Dev (144) | Test (108) |
+|---|---:|---:|
+| All three correct, router | 95.8% | 92.6% |
+| All three correct, baseline | 94.4% | 93.5% |
+| Fixed / broken (matched pairs) | 5 / 3 | 2 / 3 |
+| McNemar exact p | 0.73 | 1.0 |
+
+**The router does not demonstrate a win over the baseline at these sample sizes.** Dev
+moved in its favour, test moved against it, and neither is significant — McNemar p is
+nowhere near 0.05 on either split, and single-digit disagreement counts are exactly the
+regime where "which one is ahead this run" is noise, not signal. Per rule 4, reporting only
+the dev number and stopping there would have overstated it; rule 3 already establishes this
+project does not do that with labels, and it should not do it with results either.
+
+What the router *did* demonstrably do, independent of the noisy headline number: fixed
+both dev `out_of_scope` mislabels the design targeted (`hl-0112`, `hl-0219`) and the one
+equivalent case on test (`hl-0005`) — 3 for 3 on the specific pattern it was built to fix —
+and it can now never emit a `product_safety`-without-`high` or an internally-contradictory
+`out_of_scope` reason, by construction rather than by hoping the model gets it right. The
+three tickets it breaks on test (`hl-0162`, `hl-0234`, `hl-0247`) are all urgency-only
+misses unrelated to either design change — `hl-0234` ("how soon can I expect my shipment")
+is the same `delivery_period` low/normal boundary D-017 already documented as unstable
+across runs, not a router regression.
+
+Cost and latency: router $0.001385/ticket on dev, $0.001335 on test, against baseline's
+$0.001294 / $0.001310 — the extra ~6-7% is the longer prompt (one added clarification
+paragraph); the policy layer and confidence gate are pure post-processing and cost
+nothing. Not worth optimising away at these amounts.
+
+**Next step, not taken here:** the failure-pattern fix generalises and is worth keeping;
+the confidence gate is sound in design (§5's open question, now answered) but has not yet
+been shown to move the headline number, because the model's errors on this eval set are
+mostly *confident* errors rather than *uncertain* ones. A router with a real accuracy edge
+probably needs a second, narrower check on the specific patterns still failing (the
+`normal`/`low` boundary on delivery and refund-chasing tickets) rather than a global
+confidence threshold, which this phase shows has limited headroom left to give.
+
+Total phase spend: $1.7879 project-to-date (`make spend`), of which D-018's re-baseline
+(dev + test) cost $0.3278 and the router's dev + test runs cost $0.3436 — comfortably
+under the $2 cap on every individual run.
+
 ### D-020 — D-018 settled: account admin blocking nothing paid-for is `low` (simulated client decision)
 
 Phase 2 opened with D-018 still unresolved: the client brief was silent on whether an

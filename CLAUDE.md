@@ -16,35 +16,43 @@ escalating risky or uncertain ones to a human review queue.
 
 ## Where we are
 
-**Phase 1 complete.** 252 tickets (216 Bitext, 36 authored hard cases), labels drafted by
-`gpt-5.6-terra`, split 144 dev / 108 test.
+**Phase 1 and Phase 2 complete.** 252 tickets (216 Bitext, 36 authored hard cases), labels
+drafted by `gpt-5.6-terra`, split 144 dev / 108 test.
 
-The client brief is now at **v2**: five clarifications, each prompted by a contested or
-contradictory label found in review, with a changelog in `docs/client-brief.md` §7. Two of
-the five made labels wrong that v1 allowed, so the whole set was swept by rule for them —
-13 labels changed. The baseline prompt restates the same v2 policy and both splits were
-re-run against it.
+The client brief is now at **v3**: six clarifications total across two versions, each
+prompted by a contested or contradictory label found in review or by an open question
+logged in `DECISIONS.md`, with a changelog in `docs/client-brief.md` §7. v3 settled D-018
+(a simulated-client decision, since there is no real client to ask — see D-020): an
+account-level admin task that blocks nothing paid for is `low`, not `normal`. 23 labels
+have now been changed by rule sweeps across the two brief versions (13 at v2, 10 at v3).
+The baseline prompt restates the same v3 policy and both splits were re-run against it —
+that is the current **baseline of record**.
 
 Label checking to date, none of it by a person:
 - **85 of 252** through a second-opinion review by `claude-opus-5` (round 1: 55 tickets;
   round 2: a fresh random block of 30 drawn from the never-reviewed remainder).
-- **13** changed by the brief v2 rule sweep, which applies a rule without re-reading and
-  is *not* a check.
+- **23** changed by rule sweeps (13 at brief v2, 10 at brief v3), which apply a rule
+  without re-reading and are *not* a check.
 - Label error rate: **round 1 block 20.0%** (6/30, 95% CI 9.5–37.3%, restated upwards
   from 16.7% after round 2 found an error round 1 had confirmed); **round 2 block 3.3%**
   (1/30, 95% CI 0.6–16.7%). The two rounds sample different populations and are never
   pooled.
 
-**Step 1 complete: evaluation set, versioned brief, and single-prompt baseline.**
+**Step 1: evaluation set, versioned brief, and single-prompt baseline. Step 2: D-018
+settled and a router built** (`src/triage/router.py`, `src/triage/evaluate_router.py`) —
+same model and brief as the baseline, adding a prompt fix for the one known failure
+pattern brief v3 did not cover, a deterministic policy layer enforcing two brief
+invariants on live predictions, and a confidence gate that sends uncertain tickets to a
+human instead of guessing (settling brief §5's deliberately-open question). **It does not
+show a statistically significant improvement over the baseline at n=144/108** — McNemar
+p=0.73 (dev), p=1.0 (test) on "all three correct" — though it demonstrably fixed the
+specific failure pattern it targeted (3 for 3) and cannot emit two classes of
+self-contradictory prediction by construction. See `DECISIONS.md` D-021 for the full,
+unflattering-where-it-should-be account.
 
-Recommended before Phase 2, and not yet done: put `DECISIONS.md` D-018 to the client —
-whether an account-level admin task that blocks nothing paid for is `low` or `normal`. It
-accounts for 12 of the baseline's 16 remaining urgency errors and nine inconsistent
-labels, and no amount of prompt work can settle it.
-
-Deliberately *not* built yet: router, specialist answerers, retrieval over policy docs,
-the orders database, the review queue UI, deployment. Each of those is a later step and
-each will be measured against the baseline recorded in `results/` — **at the same brief
+Deliberately *not* built yet: specialist answerers, retrieval over policy docs, the
+orders database, the review queue UI, deployment. Each of those is a later step and each
+will be measured against the baseline recorded in `results/` — **at the same brief
 version**.
 
 ## The rules this project runs on
@@ -127,6 +135,8 @@ make data       build the eval set (drafts labels; costs money, cached on disk)
 make smoke      ~1c end-to-end pipeline check on 16 tickets (never an eval set)
 make eval       score the baseline on dev            <-- the main one
 make eval-test  score on the held-out test split
+make eval-router       score the router on dev and compare it to the baseline
+make eval-router-test  score the router on the held-out test split
 make review     export the round-1 label sample for correction
 make review-round2  draw a fresh random block from the never-reviewed remainder
 make sweep      show which labels the current brief's rules would change (dry run)
@@ -137,24 +147,37 @@ make test       checks that need no API key
 ## Current results
 
 Baseline of record (`results/latest_{dev,test}.json`), `baseline_v1` against **client
-brief v2**:
+brief v3**:
 
-Dev: intent 95.1%, urgency 95.1% (macro recall 94.5%), escalation 98.6%, all three 91.0%.
-Test: intent 96.3%, urgency 91.7% (macro recall 92.4%), escalation 98.2%, all three 88.9%.
-Escalation recall 1.00 on both splits, no missed escalations; 4 spurious `out_of_scope`
-escalations remain, all on "make a claim / file a complaint" wording that v2 did not
-address. `high` urgency recall 100% on both — **on 15 and 10 tickets**, so the 95% Wilson
-interval reaches down to 79.6% and 72.3%; treat it as "no misses yet", not as reliable.
+Dev: intent 95.1%, urgency 99.3% (macro recall 99.7%), escalation 97.9%, all three 94.4%.
+Test: intent 96.3%, urgency 96.3% (macro recall 96.8%), escalation 99.1%, all three 93.5%.
+`high` urgency recall 100% on both — **on 15 and 10 tickets**, so the 95% Wilson interval
+reaches down to 79.6% and 72.3%; treat it as "no misses yet", not as reliable. Spurious
+`out_of_scope` escalations on "make a claim / file a complaint" wording are still present
+in the baseline (untouched, by design — the router below fixes them).
 
-**These are a new bar, not an improvement.** Brief v2 gave the baseline the pre-dispatch
-rule it was previously missing, so labels and prompt moved together. The brief v1 runs
-stay in `results/` under their timestamps. See `DECISIONS.md` D-016.
+**These are a new bar, not an improvement.** Brief v3 settled D-018 (an account-admin
+urgency question with no rule to decide it), so labels and prompt moved together, same as
+v1 → v2. The brief v1 and v2 runs stay in `results/` under their timestamps. See
+`DECISIONS.md` D-020.
+
+**Router** (`router_v1`, `results/latest_router_{dev,test}.json`): same model and brief,
+plus a prompt fix for the "make a claim" pattern, a deterministic policy layer, and a
+confidence gate (threshold 0.7, chosen on dev) that sends uncertain tickets to a human.
+All three correct: dev 95.8% vs baseline 94.4% (McNemar p=0.73, not significant); test
+92.6% vs baseline 93.5% (p=1.0, not significant). **No demonstrated win over the baseline
+at these sample sizes** — say so, don't round it up. It did fix 3/3 of the specific
+`out_of_scope` mislabels it targeted, and cannot emit a `product_safety`-without-`high`
+or a self-contradictory `out_of_scope` reason by construction. Self-handled accuracy 96.8%
+(dev) / 93.1% (test) on the ~80-87% of tickets not sent to a human. See `DECISIONS.md`
+D-021.
 
 Label error rate: round 1 block 20.0% (6/30, 95% CI 9.5–37.3%); round 2 block 3.3%
 (1/30, 95% CI 0.6–16.7%). Never pooled. Round 2 is not independent — the same model wrote
 the sweep rules and then measured what they left behind.
 
-**$1.1165 spent in total** across the whole ledger (`make spend`), of which $0.1842 is a
+**$1.7879 spent in total** across the whole ledger (`make spend`), of which $0.1842 is a
 backfilled pre-ledger entry for the smoke test and effort probe. The brief v2 re-run cost
-$0.3197. Earlier documents quoted $0.61, which excluded the backfilled entry; the ledger
-total is the number to use. Full table in `README.md`.
+$0.3197, the brief v3 re-run $0.3278, and the router's dev + test runs $0.3436. Earlier
+documents quoted $0.61, which excluded the backfilled entry; the ledger total is the
+number to use. Full table in `README.md`.

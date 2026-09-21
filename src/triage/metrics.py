@@ -59,6 +59,24 @@ def wilson_interval(successes: int, n: int, z: float = 1.96) -> tuple[float, flo
     return (round(max(0.0, centre - half), 4), round(min(1.0, centre + half), 4))
 
 
+def mcnemar_exact_p(fixed: int, broken: int) -> float:
+    """Exact two-sided McNemar test for two systems scored on the SAME tickets.
+
+    `fixed` is the count where system A was wrong and B right; `broken` the reverse.
+    Tickets where they agree carry no information about which is better and are already
+    excluded by construction. Under the null (the two disagree equally often in each
+    direction) the smaller count is Binomial(fixed + broken, 0.5); exact rather than
+    chi-squared because the disagreement counts here are typically in the single digits,
+    where the chi-squared approximation is unreliable.
+    """
+    n = fixed + broken
+    if n == 0:
+        return 1.0
+    k = min(fixed, broken)
+    tail = sum(math.comb(n, i) for i in range(k + 1)) / (2**n)
+    return round(min(1.0, 2 * tail), 4)
+
+
 def label_error_rate(tickets: list[dict]) -> dict:
     """How often the drafted labels were wrong, measured on reviewed tickets.
 

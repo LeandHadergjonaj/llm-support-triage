@@ -3,10 +3,13 @@
 Routing customer support tickets for a fictional online homewares retailer: what is this
 ticket about, how urgent is it, and does a human need to handle it.
 
-This repository is at **step 1 of a staged build**. Step 1 is an evaluation set and a
-deliberately simple baseline — one LLM call per ticket — whose job is to be the bar that
-every later, more complicated version has to beat. There is no router, no retrieval, no
-agent and no UI yet, on purpose.
+This repository is at **step 2 of a staged build**. Step 1 was an evaluation set and a
+deliberately simple baseline — one LLM call per ticket — whose job is to be the bar every
+later, more complicated version has to beat. Step 2 settles the one open policy question
+the baseline could not answer on its own (`DECISIONS.md` D-018/D-020) and adds a router: a
+prompt fix, a deterministic policy layer, and a confidence gate that sends uncertain
+tickets to a human. It does **not** yet beat the baseline outside noise — see below. There
+is no retrieval, no answerer agent and no UI yet, on purpose.
 
 ## Quick start
 
@@ -67,6 +70,8 @@ run replaces these projections with measurements.
 | `src/triage/metrics.py` | Scoring, separate from the run loop so results can be re-scored free |
 | `src/triage/export_review.py` | Exports a review sample: targeted picks plus a random block, per round |
 | `src/triage/sweep.py` | Applies brief clarifications to every label they touch, by rule |
+| `src/triage/router.py` | The router: a prompt fix, a deterministic policy layer, a confidence gate |
+| `src/triage/evaluate_router.py` | Runs the router over a split and compares it to the baseline of record |
 | `prompts/baseline_v1.md` | The baseline prompt, rendered so it can be read and diffed |
 | `data/README.md` | Licence position, provenance, and every transformation applied |
 | `tests/` | Checks that run without an API key |
@@ -187,6 +192,58 @@ of points mean anything.
 - Escalation recall on dev dropped to 0.92 this run (11/12, one missed
   `refund_over_threshold`) — noise at n=12, not a labels-vs-prompt effect; test recall
   stayed at 1.00 (11/11).
+
+## Router results
+
+`router_v1` (`src/triage/router.py`, run via `make eval-router` / `make eval-router-test`):
+the same model and the same brief v3 prompt as the baseline, plus three additions —
+
+1. A prompt clarification for the "make a claim / file a complaint" failure pattern above.
+2. A deterministic policy layer applied to every live prediction: `product_safety` always
+   forces `urgency=high`, and an `out_of_scope` escalation reason is dropped whenever the
+   intent isn't also `out_of_scope` — the same two invariants `sweep.py` enforces on the
+   label set, enforced here on the model's own output instead.
+3. A confidence gate: `sent_to_human = escalate OR confidence < 0.7`. The threshold was
+   chosen on dev only, from a scan over nine candidate values computed for free from
+   predictions already paid for (`--rescore`, no extra API calls) — self-handled accuracy
+   peaks at 0.7 and climbs no further, because the three dev tickets the router still gets
+   wrong are all high-confidence (0.83–0.98); no threshold catches those. It answers brief
+   §5's explicitly open question about how low confidence should feed the review queue.
+
+> ### It does not beat the baseline outside noise
+>
+> | | Dev (144) | Test (108) |
+> |---|---:|---:|
+> | All three correct, router | 95.8% | 92.6% |
+> | All three correct, baseline | 94.4% | 93.5% |
+> | Fixed / broken (matched pairs) | 5 / 3 | 2 / 3 |
+> | McNemar exact p | 0.73 | 1.0 |
+>
+> Dev moved in the router's favour, test moved against it, and neither is remotely
+> significant — an exact McNemar test on tickets where the two systems disagree gives
+> p=0.73 and p=1.0, and single-digit disagreement counts are exactly the regime where
+> "which one is ahead this run" is noise. **Read this as: no demonstrated accuracy win at
+> this sample size**, not as a negative result either — see `DECISIONS.md` D-021 for what
+> the router did and did not do, and why.
+
+What it *did* do, independent of the non-significant headline: fixed all three
+`out_of_scope` mislabels it targeted (`hl-0112`, `hl-0219` on dev, `hl-0005` on test — 3
+for 3), and by construction can no longer emit a `product_safety` ticket below `high` or a
+self-contradictory `out_of_scope` reason. The three tickets it breaks on test are all
+urgency-only misses on the `normal`/`low` boundary unrelated to either design change — one
+of them (`hl-0234`, "how soon can I expect my shipment") is the same boundary D-017 already
+documented as unstable run to run, not a router regression.
+
+| | Dev (144) | Test (108) |
+|---|---:|---:|
+| Sent to a human | 20 (13.9%) | 21 (19.4%) |
+| Self-handled, all three correct | 96.8% (n=124) | 93.1% (n=87) |
+| Cost per ticket | $0.001385 | $0.001335 |
+| Baseline cost per ticket | $0.001294 | $0.001310 |
+
+The router costs 6–7% more per ticket than the baseline — one added prompt paragraph; the
+policy layer and confidence gate are free post-processing. Not worth optimising away at
+these amounts, and not something that would offset an accuracy win this small anyway.
 
 ## Label quality
 

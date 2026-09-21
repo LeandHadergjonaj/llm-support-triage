@@ -20,6 +20,7 @@ from triage.llm import DEFAULT_BUDGET_USD, DEFAULT_MODEL, PRICING_PER_MTOK, Budg
 from triage.metrics import (
     label_error_rate,
     majority_class_baseline,
+    mcnemar_exact_p,
     score,
     score_escalation,
     score_slices,
@@ -384,6 +385,19 @@ def test_wilson_interval_stays_inside_zero_to_one():
     assert wilson_interval(1, 20)[0] >= 0.0
 
 
+def test_mcnemar_exact_p_is_significant_when_one_side_never_loses():
+    """9 fixed, 0 broken is exactly the "one side always wins" case."""
+    assert mcnemar_exact_p(9, 0) < 0.01
+
+
+def test_mcnemar_exact_p_is_not_significant_on_a_near_even_split():
+    assert mcnemar_exact_p(5, 4) > 0.5
+
+
+def test_mcnemar_exact_p_is_one_when_nothing_disagrees():
+    assert mcnemar_exact_p(0, 0) == 1.0
+
+
 def test_wilson_interval_narrows_as_the_sample_grows():
     """30 random tickets is meaningfully tighter than 15 -- the whole point of raising it."""
     def width(k, n):
@@ -636,6 +650,65 @@ def test_the_sweep_never_claims_to_have_checked_a_ticket():
 @pytest.mark.skipif(
     not (REPO / "data" / "eval" / "dev.jsonl").exists(), reason="eval set not built yet"
 )
+def test_router_policy_layer_enforces_the_same_invariants_as_the_sweep():
+    from triage.router import enforce_policy
+
+    def pred(**kw):
+        base = {
+            "intent": "product_issue",
+            "urgency": "normal",
+            "escalate": True,
+            "escalation_reasons": ["product_safety"],
+            "confidence": 0.9,
+            "rationale": "r",
+        }
+        return base | kw
+
+    # product_safety always forces high, even if the model said otherwise.
+    fixed, notes = enforce_policy(pred())
+    assert fixed["urgency"] == "high"
+    assert "product_safety_forces_high" in notes
+
+    # out_of_scope reason requires a matching intent, regardless of confidence.
+    fixed, notes = enforce_policy(
+        pred(intent="billing_and_payment", escalation_reasons=["out_of_scope"])
+    )
+    assert fixed["escalation_reasons"] == []
+    assert fixed["escalate"] is False
+    assert "out_of_scope_reason_dropped" in notes
+
+    # A clean prediction passes through untouched.
+    clean = pred(escalation_reasons=[], escalate=False, urgency="low")
+    fixed, notes = enforce_policy(clean)
+    assert fixed == clean
+    assert notes == []
+
+
+def test_router_confidence_gate_sends_uncertain_tickets_to_a_human():
+    from triage.router import route
+
+    def pred(confidence, escalate=False):
+        return {
+            "intent": "delivery_and_shipping", "urgency": "low", "escalate": escalate,
+            "escalation_reasons": [], "confidence": confidence, "rationale": "r",
+        }
+
+    # Confident and not escalated -> handled by the system.
+    _, sent, notes = route(pred(0.9), threshold=0.75)
+    assert sent is False
+    assert notes == []
+
+    # Below threshold -> sent to a human even though nothing formally escalated.
+    _, sent, notes = route(pred(0.5), threshold=0.75)
+    assert sent is True
+    assert "low_confidence" in notes
+
+    # Already escalated -> sent regardless of confidence, and not double-flagged.
+    _, sent, notes = route(pred(0.99, escalate=True), threshold=0.75)
+    assert sent is True
+    assert "low_confidence" not in notes
+
+
 def test_the_label_set_obeys_the_v2_rules_it_was_swept_for():
     """The brief is the source of truth; these are the two rules it gained at v2."""
     for split in ("dev", "test"):

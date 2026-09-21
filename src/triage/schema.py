@@ -41,6 +41,18 @@ class Labeler(BaseModel):
     effort: str
 
 
+class ReviewSelection(BaseModel):
+    """Why a ticket was put in front of a human, recorded when the review is imported.
+
+    `in_random_block` is the one that matters statistically: those tickets are a uniform
+    draw over the whole set, so their error rate estimates the set's. The targeted picks
+    were chosen for looking wrong and cannot.
+    """
+
+    reason: str
+    in_random_block: bool = False
+
+
 class Ticket(BaseModel):
     """One evaluation ticket."""
 
@@ -57,6 +69,8 @@ class Ticket(BaseModel):
     # hand. `evaluate.py` refuses to score one as a baseline.
     smoke_test: bool = False
     human_reviewed: bool = False
+    review_selection: ReviewSelection | None = None
+    review_corrected: bool | None = None
     review_note: str | None = None
     # Provenance back to the upstream row, null for authored cases.
     bitext_intent: str | None = None

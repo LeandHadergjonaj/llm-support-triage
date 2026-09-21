@@ -29,7 +29,7 @@ from triage.llm import (
     get_client,
     record_spend,
 )
-from triage.metrics import score_escalation, score_slices
+from triage.metrics import label_error_rate, score_escalation, score_slices
 from triage.schema import Prediction, Ticket, prediction_json_schema
 
 EVAL_DIR = REPO_ROOT / "data" / "eval"
@@ -65,6 +65,18 @@ def load_split(split: str, eval_dir: Path, smoke: bool) -> list[Ticket]:
     if smoke and not stamped:
         raise SystemExit(f"--smoke was passed but {path} holds no smoke-test tickets.")
     return tickets
+
+
+def _all_tickets(eval_dir: str | Path) -> list[dict]:
+    """Every ticket in the eval set, both splits, as raw dicts."""
+    out = []
+    for name in ("dev", "test"):
+        path = Path(eval_dir) / f"{name}.jsonl"
+        if path.exists():
+            out += [
+                json.loads(line) for line in path.read_text().splitlines() if line.strip()
+            ]
+    return out
 
 
 def reconcile_escalations(eval_dir: str | Path, split: str, rows: list[dict]) -> dict:
@@ -176,6 +188,66 @@ def _pct(value: float | None) -> str:
     return "--" if value is None else f"{value:.1%}"
 
 
+def _label_error_lines(record: dict) -> list[str]:
+    """How often the drafted labels were actually wrong, where a human has checked."""
+    rates = record.get("label_error_rate")
+    if not rates:
+        return []
+    block, targeted = rates["random_block"], rates["targeted_picks"]
+    if not block["reviewed"]:
+        return [
+            "## Label error rate",
+            "",
+            (
+                "Not yet measurable: no ticket in the random review block has been "
+                "checked by a human. Until it has, the accuracy figures above have no "
+                "known error bar on the labels themselves."
+            ),
+            "",
+        ]
+    low, high = block["ci95"]
+    lines = [
+        "## Label error rate",
+        "",
+        (
+            f"Measured on the **random block** -- {block['reviewed']} tickets drawn "
+            f"uniformly from all {record['escalation_reconciliation']['eval_set']['tickets']}, "
+            f"which is the only part of the review sample that estimates the set as a "
+            f"whole."
+        ),
+        "",
+        "| | Corrected | Reviewed | Error rate | 95% CI |",
+        "|---|---:|---:|---:|---:|",
+        (
+            f"| Random block | {block['corrected']} | {block['reviewed']} | "
+            f"{block['error_rate']:.1%} | [{low:.1%}, {high:.1%}] |"
+        ),
+    ]
+    if targeted["reviewed"]:
+        t_low, t_high = targeted["ci95"]
+        lines.append(
+            f"| Targeted picks | {targeted['corrected']} | {targeted['reviewed']} | "
+            f"{targeted['error_rate']:.1%} | [{t_low:.1%}, {t_high:.1%}] |"
+        )
+    lines += [
+        "",
+        (
+            "Wilson score interval. The targeted picks were chosen for looking wrong, "
+            "so their rate is biased upwards by construction -- a diagnostic of where "
+            "the drafter struggles, not an estimate of the set. Do not average the two "
+            "rows."
+        ),
+        "",
+        (
+            f"Read the accuracy figures above against this: roughly "
+            f"{block['error_rate']:.0%} of reference labels are wrong (95% CI "
+            f"{low:.0%}-{high:.0%}), which bounds how precisely any of them can be known."
+        ),
+        "",
+    ]
+    return lines
+
+
 def _reconciliation_lines(record: dict) -> list[str]:
     """Tie this split's escalation counts back to the label set's, in the report itself."""
     rec = record.get("escalation_reconciliation")
@@ -285,6 +357,7 @@ def markdown_summary(record: dict) -> str:
         ),
         "",
         *_reconciliation_lines(record),
+        *_label_error_lines(record),
         "## Urgency",
         "",
         (
@@ -467,6 +540,9 @@ def main() -> int:
         "complete": not incomplete,
         "usage": usage.summary(args.model),
         "escalation_reconciliation": reconcile_escalations(eval_dir, args.split, rows),
+        # Measured over both splits: the random block spans the whole set, and cutting
+        # it to one split would shrink the sample and bias it towards that split.
+        "label_error_rate": label_error_rate(_all_tickets(eval_dir)),
         "scores": score_slices(rows),
         "predictions": rows,
     }

@@ -13,6 +13,7 @@ import json
 import sys
 
 from triage.llm import REPO_ROOT
+from triage.metrics import label_error_rate
 from triage.taxonomy import ESCALATION_REASONS, INTENTS, URGENCIES
 
 EVAL = REPO_ROOT / "data" / "eval"
@@ -58,6 +59,13 @@ def main() -> int:
                 continue
             ticket["human_reviewed"] = True
             ticket["review_note"] = row.get("reviewer_note") or None
+            # Why this ticket was in the sample, carried onto the ticket so the error
+            # rate can be reported for the random block separately from the targeted
+            # picks. Only the random block estimates anything about the set as a whole.
+            ticket["review_selection"] = {
+                "reason": row.get("why_selected") or "unknown",
+                "in_random_block": row.get("in_random_block", "false") == "true",
+            }
             touched = False
 
             if (value := row["CORRECTED_intent"].strip()):
@@ -87,6 +95,7 @@ def main() -> int:
             if not ticket["labels"]["escalate"]:
                 ticket["labels"]["escalation_reasons"] = []
 
+            ticket["review_corrected"] = touched
             changed += touched
             confirmed += not touched
 
@@ -95,7 +104,30 @@ def main() -> int:
                 fh.write(json.dumps(ticket, ensure_ascii=False) + "\n")
 
     print(f"Applied review to {changed + confirmed} tickets: {changed} corrected, {confirmed} confirmed.")
-    print("Re-run the eval to score against the corrected labels.")
+
+    reviewed = [
+        json.loads(line)
+        for split in ("dev", "test")
+        for line in (eval_dir / f"{split}.jsonl").read_text().splitlines()
+        if line.strip()
+    ]
+    rates = label_error_rate(reviewed)
+    block = rates["random_block"]
+    if block["reviewed"]:
+        low, high = block["ci95"]
+        print(
+            f"\nLabel error rate on the random block: {block['corrected']}/"
+            f"{block['reviewed']} = {block['error_rate']:.1%}, "
+            f"95% CI [{low:.1%}, {high:.1%}] (Wilson)."
+        )
+        targeted = rates["targeted_picks"]
+        if targeted["reviewed"]:
+            print(
+                f"Targeted picks: {targeted['corrected']}/{targeted['reviewed']} = "
+                f"{targeted['error_rate']:.1%} -- biased upwards by construction, "
+                f"a diagnostic rather than an estimate of the set."
+            )
+    print("\nRe-run the eval to score against the corrected labels.")
     return 0
 
 

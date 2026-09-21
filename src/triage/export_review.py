@@ -65,7 +65,11 @@ RANDOM_CONTROL = "random control"
 
 
 def select(
-    rows: list[dict], n: int, seed: int, random_controls: int
+    rows: list[dict],
+    n: int,
+    seed: int,
+    random_controls: int,
+    pinned: dict[str, tuple[str, bool]] | None = None,
 ) -> list[tuple[dict, str, bool]]:
     """Pick the review sample. Returns (ticket, why_selected, in_random_block).
 
@@ -78,15 +82,29 @@ def select(
     The random block answers "how wrong is the label set overall". For that it has to be
     a uniform draw over every ticket, so it is sampled from all of them with its own
     random stream -- not from what the targeted picks left behind, which would exclude
-    the most suspicious tickets and bias the estimate down. A ticket can therefore be in
-    both: it is listed once, keeping its targeted reason, with `in_random_block` true.
-    Counting errors over exactly the flagged rows gives the unbiased estimate.
+    the most suspicious tickets and bias the estimate down. A ticket can be in both: it
+    is listed once, keeping its targeted reason, with `in_random_block` true. Counting
+    errors over exactly the flagged rows gives the unbiased estimate.
 
-    Drawing the two independently also means adding random controls later cannot displace
-    a targeted pick already under review.
+    `pinned` carries the previous export's rows, so re-exporting never pulls a ticket out
+    from under a reviewer. Growing the block therefore tops the existing one up rather
+    than redrawing it, and that keeps the block uniform: a ticket already in is in, and
+    every ticket not already in has the same chance of being drawn in the top-up, so
+    every ticket ends up with the same inclusion probability of `random_controls` / N.
     """
+    pinned = pinned or {}
     picked: dict[str, tuple[dict, str]] = {}
+    by_id = {r["id"]: r for r in rows}
     targeted_budget = max(0, n - random_controls)
+
+    # Whatever the reviewer already has stays, with the reason it was given.
+    block_ids: set[str] = set()
+    for ticket_id, (reason, was_in_block) in pinned.items():
+        if ticket_id not in by_id:
+            continue  # the eval set was rebuilt and this ticket is gone
+        picked[ticket_id] = (by_id[ticket_id], reason)
+        if was_in_block:
+            block_ids.add(ticket_id)
 
     rng = random.Random(seed)
 
@@ -94,7 +112,9 @@ def select(
         """Fill up to `quota` from `candidates`, never exceeding the targeted budget."""
         pool = [r for r in candidates if r["id"] not in picked]
         rng.shuffle(pool)
-        for row in pool[: min(quota, targeted_budget - len(picked))]:
+        already = sum(1 for _, why in picked.values() if why == reason)
+        room = min(quota - already, targeted_budget - len(picked))
+        for row in pool[:max(0, room)]:
             picked[row["id"]] = (row, reason)
 
     take([r for r in rows if r.get("intent_disagreement")],
@@ -103,26 +123,54 @@ def select(
     take([r for r in rows if r["labels"]["escalate"]], "escalation (rare, high-leverage)", 7)
     take([r for r in rows if r["hard_case"]], "authored hard case", 4)
 
-    # Separate stream, so the size of this block never perturbs the picks above.
-    block = random.Random(seed + 1000).sample(rows, min(random_controls, len(rows)))
-    in_block = {r["id"] for r in block}
-    for row in block:
-        picked.setdefault(row["id"], (row, RANDOM_CONTROL))
+    # Top the random block up along one fixed shuffle. A prefix is nested in k, so
+    # raising the block later keeps everything already in it; random.sample is not, and
+    # would silently swap tickets out.
+    shuffled = list(rows)
+    random.Random(seed + 1000).shuffle(shuffled)
+    for row in shuffled:
+        if len(block_ids) >= min(random_controls, len(rows)):
+            break
+        block_ids.add(row["id"])
+    for ticket_id in block_ids:
+        picked.setdefault(ticket_id, (by_id[ticket_id], RANDOM_CONTROL))
 
     return sorted(
-        ((row, reason, row["id"] in in_block) for row, reason in picked.values()),
+        ((row, reason, row["id"] in block_ids) for row, reason in picked.values()),
         key=lambda triple: triple[0]["id"],
     )
 
 
+REVIEWER_COLUMNS = (
+    "CORRECTED_intent",
+    "CORRECTED_urgency",
+    "CORRECTED_escalate",
+    "CORRECTED_escalation_reasons",
+    "reviewer_note",
+)
+
+
+def read_existing(dest: Path) -> dict[str, dict]:
+    """Load a previous export, so re-exporting adds to it instead of replacing it.
+
+    Without this, growing the sample overwrites the file and throws away anything the
+    reviewer has already typed. The rows that come back here are pinned into the new
+    selection and their CORRECTED_* values are carried over verbatim.
+    """
+    if not dest.exists():
+        return {}
+    with dest.open(newline="") as fh:
+        return {row["id"]: row for row in csv.DictReader(fh)}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("-n", type=int, default=42)
+    parser.add_argument("-n", type=int, default=57)
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument(
         "--random-controls",
         type=int,
-        default=15,
+        default=30,
         metavar="N",
         help=(
             "Reserve this many purely random tickets. These are the only ones that "
@@ -139,7 +187,13 @@ def main() -> int:
 
     eval_dir, dest = (SMOKE_EVAL, SMOKE_DEST) if args.smoke else (EVAL, DEST)
     rows_all = load_all(eval_dir)
-    selected = select(rows_all, args.n, args.seed, args.random_controls)
+    existing = read_existing(dest)
+    pinned = {
+        ticket_id: (row.get("why_selected", RANDOM_CONTROL),
+                    row.get("in_random_block", "false") == "true")
+        for ticket_id, row in existing.items()
+    }
+    selected = select(rows_all, args.n, args.seed, args.random_controls, pinned)
     dest.parent.mkdir(parents=True, exist_ok=True)
     with dest.open("w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=COLUMNS)
@@ -158,11 +212,8 @@ def main() -> int:
                     "why_selected": reason,
                     "in_random_block": str(in_block).lower(),
                     "drafter_note": row.get("drafter_note", ""),
-                    "CORRECTED_intent": "",
-                    "CORRECTED_urgency": "",
-                    "CORRECTED_escalate": "",
-                    "CORRECTED_escalation_reasons": "",
-                    "reviewer_note": "",
+                    # Anything the reviewer has already typed is carried over.
+                    **{c: existing.get(row["id"], {}).get(c, "") for c in REVIEWER_COLUMNS},
                 }
             )
 

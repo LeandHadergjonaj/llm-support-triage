@@ -143,6 +143,26 @@ called `severe_customer_anger` and the baseline did not. The brief says mild swe
 about the situation is **not** severe anger, so the baseline looks right and the label
 looks wrong. That ticket is in the review sample.
 
+## Label quality
+
+The reference labels are model-drafted, so how often they are *wrong* bounds how
+precisely anything else can be known. `make review` exports a sample in two blocks that
+must not be mixed:
+
+- a **random block** of 30 tickets drawn uniformly from all 252 (`in_random_block=true`).
+  This, and only this, estimates the error rate of the label set. Thirty gives a 95%
+  Wilson interval of roughly ±13 points around a rate near 15% — enough to separate "a
+  few percent" from "a third", not enough to separate 10% from 20%. Fifteen would have
+  been ±18.
+- **targeted picks** — drafter disagreements, self-flagged uncertainty, escalations, hard
+  cases. Chosen for looking wrong, so their error rate is biased upwards by construction.
+  A diagnostic of where the drafter struggles, never a population estimate.
+
+`make import-review` folds corrections back in and prints both rates with intervals; the
+next `make eval` carries them into the results. Re-exporting is additive: rows already in
+the file stay, with anything already typed into them, and growing the random block tops it
+up rather than redrawing it.
+
 ## Status
 
 See `CLAUDE.md`.

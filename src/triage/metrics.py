@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections import Counter, defaultdict
 from itertools import pairwise
 
@@ -39,6 +40,62 @@ def _confusions(pairs: list[tuple[str, str]], top: int = 10) -> list[dict]:
         {"gold": gold, "predicted": pred, "n": n}
         for (gold, pred), n in counts.most_common(top)
     ]
+
+
+def wilson_interval(successes: int, n: int, z: float = 1.96) -> tuple[float, float]:
+    """95% confidence interval for a proportion, Wilson score method.
+
+    Wilson rather than the textbook p +/- z*sqrt(p(1-p)/n): the normal approximation is
+    poor at the sample sizes and small proportions this project actually has, and it
+    happily returns a lower bound below zero. Wilson stays inside [0, 1] and holds its
+    coverage at n in the tens, which is the regime the review sample lives in.
+    """
+    if n == 0:
+        return (0.0, 1.0)
+    p = successes / n
+    denom = 1 + z**2 / n
+    centre = (p + z**2 / (2 * n)) / denom
+    half = z * math.sqrt(p * (1 - p) / n + z**2 / (4 * n**2)) / denom
+    return (round(max(0.0, centre - half), 4), round(min(1.0, centre + half), 4))
+
+
+def label_error_rate(tickets: list[dict]) -> dict:
+    """How often the drafted labels were wrong, measured on reviewed tickets.
+
+    Reported separately for the random block and the targeted picks, because only the
+    former estimates anything about the set as a whole. The targeted rate is expected to
+    be higher and is not a population estimate: those tickets were chosen for being
+    suspicious. Quoting them together, or averaging them, would be the mistake.
+    """
+
+    def measure(subset: list[dict]) -> dict:
+        reviewed = [t for t in subset if t.get("human_reviewed")]
+        if not reviewed:
+            return {"reviewed": 0, "corrected": None, "error_rate": None, "ci95": None}
+        corrected = sum(1 for t in reviewed if t.get("review_corrected"))
+        low, high = wilson_interval(corrected, len(reviewed))
+        return {
+            "reviewed": len(reviewed),
+            "corrected": corrected,
+            "error_rate": round(corrected / len(reviewed), 4),
+            "ci95": [low, high],
+            "ci95_method": "Wilson score",
+        }
+
+    def in_block(t: dict) -> bool:
+        return bool((t.get("review_selection") or {}).get("in_random_block"))
+
+    return {
+        "random_block": measure([t for t in tickets if in_block(t)]),
+        "targeted_picks": measure(
+            [t for t in tickets if t.get("human_reviewed") and not in_block(t)]
+        ),
+        "note": (
+            "Only random_block estimates the label error rate of the set. The targeted "
+            "picks were chosen for being suspicious, so their rate is biased upwards by "
+            "construction and is a diagnostic, not a population estimate."
+        ),
+    }
 
 
 def _macro_recall(pairs: list[tuple[str, str]]) -> float | None:

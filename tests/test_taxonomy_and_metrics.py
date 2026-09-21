@@ -14,9 +14,17 @@ from pydantic import ValidationError
 
 from triage.baseline import system_prompt
 from triage.evaluate import load_split, markdown_summary
+from triage.export_review import select
 from triage.labeler import BRIEF_PATH, labeler_json_schema
 from triage.llm import DEFAULT_BUDGET_USD, DEFAULT_MODEL, PRICING_PER_MTOK, Budget, Usage
-from triage.metrics import majority_class_baseline, score, score_escalation, score_slices
+from triage.metrics import (
+    label_error_rate,
+    majority_class_baseline,
+    score,
+    score_escalation,
+    score_slices,
+    wilson_interval,
+)
 from triage.schema import Prediction, Ticket, prediction_json_schema
 from triage.taxonomy import (
     BITEXT_INTENT_TO_CATEGORY,
@@ -351,3 +359,75 @@ def test_dev_and_test_escalations_sum_to_the_label_set():
     total_escalations = sum(r["labels"]["escalate"] for rows in splits.values() for r in rows)
     per_split = {k: sum(r["labels"]["escalate"] for r in v) for k, v in splits.items()}
     assert sum(per_split.values()) == total_escalations
+
+
+# --- Label error rate from the random block --------------------------------
+
+
+def test_wilson_interval_stays_inside_zero_to_one():
+    """The reason for Wilson over the textbook normal approximation."""
+    low, high = wilson_interval(0, 30)
+    assert low == 0.0 and 0.0 < high < 0.25
+    low, high = wilson_interval(30, 30)
+    assert high == 1.0 and 0.75 < low < 1.0
+    # Normal approximation would put the lower bound below zero at 0/30; Wilson does not.
+    assert wilson_interval(1, 20)[0] >= 0.0
+
+
+def test_wilson_interval_narrows_as_the_sample_grows():
+    """30 random tickets is meaningfully tighter than 15 -- the whole point of raising it."""
+    def width(k, n):
+        low, high = wilson_interval(k, n)
+        return high - low
+    assert width(2, 15) > width(4, 30) > width(8, 60)
+
+
+def _reviewed(ticket_id, in_block, corrected):
+    return {"id": ticket_id, "human_reviewed": True, "review_corrected": corrected,
+            "review_selection": {"reason": "r", "in_random_block": in_block}}
+
+
+def test_label_error_rate_keeps_the_random_block_separate():
+    tickets = (
+        [_reviewed(f"r{i}", True, i < 4) for i in range(30)]
+        + [_reviewed(f"t{i}", False, i < 9) for i in range(25)]
+        + [{"id": "unreviewed", "human_reviewed": False}]
+    )
+    rates = label_error_rate(tickets)
+    assert rates["random_block"] == {
+        "reviewed": 30, "corrected": 4, "error_rate": 0.1333,
+        "ci95": list(wilson_interval(4, 30)), "ci95_method": "Wilson score",
+    }
+    assert rates["targeted_picks"]["reviewed"] == 25
+    assert rates["targeted_picks"]["error_rate"] == 0.36
+    # The biased rate must never be silently folded into the estimate.
+    assert rates["random_block"]["error_rate"] < rates["targeted_picks"]["error_rate"]
+
+
+def test_label_error_rate_is_none_before_anyone_reviews():
+    rates = label_error_rate([{"id": "a", "human_reviewed": False}])
+    assert rates["random_block"]["error_rate"] is None
+    assert rates["random_block"]["reviewed"] == 0
+
+
+def test_review_sample_growth_never_drops_a_row():
+    """Raising the random block must top up, not redraw -- reviewers keep their file."""
+    rows = [
+        {"id": f"hl-{i:04d}", "labels": {"escalate": i % 9 == 0, "escalation_reasons": []},
+         "hard_case": i % 7 == 0, "drafter_uncertain": i % 5 == 0,
+         "intent_disagreement": i % 11 == 0}
+        for i in range(252)
+    ]
+    first = select(rows, n=42, seed=7, random_controls=15)
+    pinned = {r["id"]: (why, in_block) for r, why, in_block in first}
+    second = select(rows, n=57, seed=7, random_controls=30, pinned=pinned)
+
+    assert {r["id"] for r, _, _ in first} <= {r["id"] for r, _, _ in second}
+    assert sum(1 for _, _, b in first if b) == 15
+    assert sum(1 for _, _, b in second if b) == 30
+    # Everything in the old block is still in the new one.
+    assert ({r["id"] for r, _, b in first if b}) <= ({r["id"] for r, _, b in second if b})
+    # Reasons are stable for rows carried over.
+    before = {r["id"]: why for r, why, _ in first}
+    after = {r["id"]: why for r, why, _ in second}
+    assert all(after[i] == why for i, why in before.items())

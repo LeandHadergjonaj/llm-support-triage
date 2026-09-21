@@ -1,0 +1,18 @@
+# Secrets -- never commit
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Raw upstream dataset (19 MB; fetched by scripts/fetch_dataset.py)
+data/raw/
+
+# macOS
+.DS_Store

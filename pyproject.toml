@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "LLM support-ticket triage for Hearth & Loom: evaluation set and single-prompt baseline."
 requires-python = ">=3.11"
 dependencies = [
-    "anthropic>=0.40",
+    "openai>=2.0",
     "pydantic>=2.7",
     "python-dotenv>=1.0",
 ]

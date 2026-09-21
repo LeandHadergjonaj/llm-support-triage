@@ -1,5 +1,8 @@
 # Project context
 
+*This file is the context file for the Claude Code CLI, which is the tool being used to
+build the project. The project itself runs on OpenAI — see Stack below.*
+
 ## What this is
 
 An LLM support-triage system for **Hearth & Loom**, a fictional online homewares retailer
@@ -33,13 +36,18 @@ each will be measured against the baseline recorded in `results/`.
    model family; absolute accuracy is optimistic and every report must say so.
 5. **Beat the baseline or justify the complexity.** A later version that does not improve
    on `results/latest_dev.json` has not earned its extra moving parts.
-6. **The API key comes from the environment only.** `.env` is gitignored; never commit a key.
+6. **The API key comes from the environment only.** `OPENAI_API_KEY` in `.env`, which
+   is gitignored; never commit a key.
 
 ## Stack
 
-Python 3.11, Anthropic Python SDK, Pydantic for validation, structured outputs
-(`output_config.format`) so parsing is never the failure mode. Model: `claude-opus-5`.
-No framework — at this stage it is a classification and evaluation problem.
+Python 3.11, OpenAI Python SDK (Responses API), Pydantic for validation, strict
+structured outputs (`text.format`, `strict: true`) so parsing is never the failure mode.
+Model: `gpt-6-astra` for both label drafting and the baseline, overridable with
+`TRIAGE_MODEL` or `--model`. No framework — at this stage it is a classification and
+evaluation problem.
+
+All provider-specific code lives in `src/triage/llm.py`; nothing else imports the SDK.
 
 ## Commands
 

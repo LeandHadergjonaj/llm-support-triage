@@ -133,9 +133,10 @@ def markdown_summary(record: dict) -> str:
             f"p95 {usage['latency_p95_s']}s (at {meta['workers']} concurrent requests)"
         ),
         (
-            f"- Cache: {usage['cache_read_input_tokens']} tokens read from cache, "
-            f"{usage['cache_creation_input_tokens']} written"
+            f"- Cache: {usage['cached_tokens']} input tokens served from cache, "
+            f"{usage['cache_write_tokens']} written"
         ),
+        f"- Reasoning tokens: {usage['reasoning_tokens']} (billed as output)",
         "",
         "## Easy vs hard",
         "",

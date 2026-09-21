@@ -12,7 +12,7 @@ agent and no UI yet, on purpose.
 
 ```bash
 make setup                                    # venv + dependencies
-cp .env.example .env && $EDITOR .env          # add ANTHROPIC_API_KEY
+cp .env.example .env && $EDITOR .env          # add OPENAI_API_KEY
 .venv/bin/python scripts/fetch_dataset.py     # 19 MB upstream CSV
 make data                                     # build the eval set (drafts labels; costs money)
 make eval                                     # score the baseline on dev  <-- the command
@@ -20,6 +20,25 @@ make eval                                     # score the baseline on dev  <-- t
 
 `make eval` prints a summary and writes it to `results/`. `make test` runs the checks that
 need no API key.
+
+### What a run costs
+
+Estimates, not measurements — nothing has been run yet. Derived from measured prompt
+sizes (labeller system prompt ~2,200 tokens, baseline ~1,200, tickets average 64
+characters) against [OpenAI's published rates](https://developers.openai.com/api/docs/pricing)
+read on 2026-09-21. The range spans 200–700 output tokens per call, since reasoning
+tokens are billed as output and vary with effort and ticket difficulty.
+
+| Stage | Calls | `gpt-6-astra` (default) | `gpt-5.6-terra` |
+|---|---:|---:|---:|
+| `make data` — draft 252 labels (one-off, cached to disk) | 252 | $3.35 – $9.65 | $0.77 – $2.28 |
+| `make eval` — dev | 144 | $1.77 – $5.37 | $0.41 – $1.27 |
+| `make eval-test` — held-out test | 108 | $1.35 – $4.05 | $0.31 – $0.96 |
+| **All three** | 504 | **$6.47 – $19.07** | **$1.49 – $4.51** |
+
+Set `TRIAGE_MODEL=gpt-5.6-terra` in `.env`, or pass `--model`, to run the cheaper tier.
+Actual cost is reported by every run from the API's own usage figures, so the first real
+run replaces these estimates with measurements.
 
 ## What is here
 

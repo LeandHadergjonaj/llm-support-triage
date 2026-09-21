@@ -85,13 +85,14 @@ not a label.
 | `urgency` | **Model-drafted** |
 | `escalate`, `escalation_reasons` | **Model-drafted** |
 
-Urgency and escalation labels were drafted by Claude Opus 5 reading the full client brief
+Urgency and escalation labels were drafted by `gpt-6-astra` reading the full client brief
 (`src/triage/labeler.py`), one ticket at a time, blind to the upstream intent. They are
 **not hand-labelled**. `human_reviewed` is `false` on every ticket a person has not yet
 checked, and `label_provenance` records the source of each field individually.
 
 This matters for how the baseline's scores should be read: the baseline is being measured
-against labels drafted by the same model family, so absolute accuracy is optimistic. The
+against labels drafted by the same model family (both stages run on OpenAI, and by
+default on the same model), so absolute accuracy is optimistic. The
 numbers are useful as a fixed bar for later versions to beat, not as an estimate of how
 the system would perform against a support team's own judgement. Correcting the labels by
 hand is what fixes this — `make review` exports a sample to correct.

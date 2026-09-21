@@ -13,7 +13,8 @@ import pytest
 from pydantic import ValidationError
 
 from triage.baseline import system_prompt
-from triage.labeler import BRIEF_PATH
+from triage.labeler import BRIEF_PATH, labeler_json_schema
+from triage.llm import DEFAULT_MODEL, PRICING_PER_MTOK, Usage
 from triage.metrics import score, score_escalation
 from triage.schema import Prediction, Ticket, prediction_json_schema
 from triage.taxonomy import (
@@ -49,6 +50,59 @@ def test_prediction_schema_is_strict():
     assert schema["additionalProperties"] is False
     assert set(schema["required"]) == set(schema["properties"])
     assert schema["properties"]["intent"]["enum"] == list(INTENTS)
+
+
+@pytest.mark.parametrize("schema", [prediction_json_schema(), labeler_json_schema()])
+def test_wire_schemas_meet_openai_strict_mode_rules(schema):
+    """Strict mode requires every property in `required` and additionalProperties false
+    on every object, and rejects keywords outside its supported subset."""
+    unsupported = {"minimum", "maximum", "minLength", "maxLength", "pattern", "format",
+                   "minItems", "maxItems", "default", "oneOf", "allOf"}
+
+    def walk(node: dict, path: str = "$") -> None:
+        if node.get("type") == "object":
+            assert node.get("additionalProperties") is False, path
+            assert set(node.get("required", [])) == set(node.get("properties", {})), path
+            for key, child in node.get("properties", {}).items():
+                walk(child, f"{path}.{key}")
+        if node.get("type") == "array":
+            walk(node["items"], f"{path}[]")
+        assert not (unsupported & set(node)), f"{path}: {unsupported & set(node)}"
+
+    walk(schema)
+
+
+def test_confidence_range_is_still_enforced_client_side():
+    """The 0-1 bound was removed from the wire schema, so Prediction must hold it."""
+    with pytest.raises(ValidationError):
+        Prediction(
+            intent="order_management",
+            urgency="low",
+            escalate=False,
+            confidence=1.5,
+            rationale="x",
+        )
+
+
+def test_default_model_is_priced():
+    assert DEFAULT_MODEL in PRICING_PER_MTOK, (
+        f"{DEFAULT_MODEL} has no pricing, so cost reporting would silently be NaN"
+    )
+
+
+def test_cached_tokens_are_treated_as_a_subset_of_input_tokens():
+    """OpenAI reports cached and cache-write tokens inside input_tokens, not on top of
+    it. Getting this wrong inflates reported cost."""
+    model = "gpt-6-astra"
+    in_rate, cached_rate, _out_rate = PRICING_PER_MTOK[model]
+
+    all_uncached = Usage(input_tokens=1000, output_tokens=0, calls=1)
+    all_cached = Usage(input_tokens=1000, cached_tokens=1000, output_tokens=0, calls=1)
+
+    assert all_uncached.cost_usd(model) == pytest.approx(1000 * in_rate / 1e6)
+    assert all_cached.cost_usd(model) == pytest.approx(1000 * cached_rate / 1e6)
+    # A fully cached prompt must be cheaper, not more expensive.
+    assert all_cached.cost_usd(model) < all_uncached.cost_usd(model)
 
 
 def test_prediction_rejects_labels_outside_the_taxonomy():

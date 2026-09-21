@@ -76,7 +76,10 @@ def prediction_json_schema() -> dict:
                 "type": "array",
                 "items": {"type": "string", "enum": list(ESCALATION_REASONS)},
             },
-            "confidence": {"type": "number", "minimum": 0.0, "maximum": 1.0},
+            # No `minimum`/`maximum`: OpenAI's strict mode accepts only a subset of
+            # JSON Schema and numeric bounds are not reliably among it. The 0-1 range is
+            # still enforced, by the `Prediction` model on the way back in.
+            "confidence": {"type": "number"},
             "rationale": {"type": "string"},
         },
         "required": [

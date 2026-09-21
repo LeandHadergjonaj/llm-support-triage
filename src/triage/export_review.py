@@ -19,11 +19,14 @@ import csv
 import json
 import random
 import sys
+from pathlib import Path
 
 from triage.llm import REPO_ROOT
 
 EVAL = REPO_ROOT / "data" / "eval"
 DEST = REPO_ROOT / "data" / "review" / "label_review_sample.csv"
+SMOKE_EVAL = REPO_ROOT / "data" / "smoke"
+SMOKE_DEST = SMOKE_EVAL / "label_review_sample.csv"
 
 COLUMNS = [
     "id",
@@ -43,10 +46,10 @@ COLUMNS = [
 ]
 
 
-def load_all() -> list[dict]:
+def load_all(eval_dir: Path) -> list[dict]:
     rows = []
     for split in ("dev", "test"):
-        path = EVAL / f"{split}.jsonl"
+        path = eval_dir / f"{split}.jsonl"
         if not path.exists():
             raise SystemExit(f"{path} not found. Run: make data")
         for line in path.read_text().splitlines():
@@ -83,11 +86,17 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("-n", type=int, default=30)
     parser.add_argument("--seed", type=int, default=7)
+    parser.add_argument(
+        "--smoke",
+        action="store_true",
+        help="Export from the throwaway set in data/smoke/ instead of the eval set.",
+    )
     args = parser.parse_args()
 
-    selected = select(load_all(), args.n, args.seed)
-    DEST.parent.mkdir(parents=True, exist_ok=True)
-    with DEST.open("w", newline="") as fh:
+    eval_dir, dest = (SMOKE_EVAL, SMOKE_DEST) if args.smoke else (EVAL, DEST)
+    selected = select(load_all(eval_dir), args.n, args.seed)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    with dest.open("w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=COLUMNS)
         writer.writeheader()
         for row, reason in selected:
@@ -114,12 +123,13 @@ def main() -> int:
     counts: dict[str, int] = {}
     for _, reason in selected:
         counts[reason] = counts.get(reason, 0) + 1
-    print(f"Wrote {DEST.relative_to(REPO_ROOT)} ({len(selected)} tickets)")
+    print(f"Wrote {dest.relative_to(REPO_ROOT)} ({len(selected)} tickets)")
     for reason, n in sorted(counts.items(), key=lambda kv: -kv[1]):
         print(f"  {n:2d}  {reason}")
+    flag = " --smoke" if args.smoke else ""
     print(
         "\nFill only the CORRECTED_* columns where the draft is wrong; leave them blank "
-        "where it is right.\nThen run: .venv/bin/python -m triage.import_review"
+        f"where it is right.\nThen run: .venv/bin/python -m triage.import_review{flag}"
     )
     return 0
 

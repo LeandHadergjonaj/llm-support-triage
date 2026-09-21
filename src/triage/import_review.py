@@ -7,6 +7,7 @@ Corrected labels have their provenance flipped from `model_drafted` to `human_re
 
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import sys
@@ -16,6 +17,8 @@ from triage.taxonomy import ESCALATION_REASONS, INTENTS, URGENCIES
 
 EVAL = REPO_ROOT / "data" / "eval"
 SOURCE = REPO_ROOT / "data" / "review" / "label_review_sample.csv"
+SMOKE_EVAL = REPO_ROOT / "data" / "smoke"
+SMOKE_SOURCE = SMOKE_EVAL / "label_review_sample.csv"
 
 
 def _parse_bool(value: str) -> bool:
@@ -28,17 +31,26 @@ def _parse_bool(value: str) -> bool:
 
 
 def main() -> int:
-    if not SOURCE.exists():
-        raise SystemExit(f"{SOURCE} not found. Run: make review")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--smoke",
+        action="store_true",
+        help="Apply the review sample in data/smoke/ instead of the eval set.",
+    )
+    args = parser.parse_args()
+
+    eval_dir, source = (SMOKE_EVAL, SMOKE_SOURCE) if args.smoke else (EVAL, SOURCE)
+    if not source.exists():
+        raise SystemExit(f"{source} not found. Run: make review")
 
     corrections: dict[str, dict] = {}
-    with SOURCE.open(newline="") as fh:
+    with source.open(newline="") as fh:
         for row in csv.DictReader(fh):
             corrections[row["id"]] = row
 
     changed = confirmed = 0
     for split in ("dev", "test"):
-        path = EVAL / f"{split}.jsonl"
+        path = eval_dir / f"{split}.jsonl"
         tickets = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
         for ticket in tickets:
             row = corrections.get(ticket["id"])

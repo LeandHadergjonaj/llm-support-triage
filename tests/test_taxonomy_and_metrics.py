@@ -13,6 +13,7 @@ import pytest
 from pydantic import ValidationError
 
 from triage.baseline import system_prompt
+from triage.evaluate import load_split
 from triage.labeler import BRIEF_PATH, labeler_json_schema
 from triage.llm import DEFAULT_MODEL, PRICING_PER_MTOK, Usage
 from triage.metrics import score, score_escalation
@@ -192,3 +193,49 @@ def test_dev_and_test_do_not_overlap():
     dev, test = ids("dev"), ids("test")
     assert dev and test
     assert not (dev & test)
+
+
+# --- The smoke-test set must never be mistaken for the eval set -------------
+
+
+def _ticket(**overrides) -> str:
+    """A minimal valid ticket line, as it would appear in a .jsonl split."""
+    base = {
+        "id": "hl-0001",
+        "text": "where is my order",
+        "source": "bitext",
+        "hard_case": False,
+        "hard_case_kind": None,
+        "labels": {
+            "intent": "delivery_and_shipping",
+            "urgency": "normal",
+            "escalate": False,
+            "escalation_reasons": [],
+        },
+        "label_provenance": {
+            "intent": "bitext_mapped",
+            "urgency": "model_drafted",
+            "escalate": "model_drafted",
+        },
+    }
+    return json.dumps(base | overrides)
+
+
+def test_smoke_tickets_are_refused_as_a_baseline(tmp_path):
+    """A cheap throwaway set scored as `make eval` would file fake baseline numbers."""
+    (tmp_path / "dev.jsonl").write_text(
+        _ticket(smoke_test=True, labeler={"model": "gpt-5.6-luna", "effort": "none"}) + "\n"
+    )
+    with pytest.raises(SystemExit, match="smoke-test tickets"):
+        load_split("dev", tmp_path, smoke=False)
+
+
+def test_real_tickets_are_refused_as_a_smoke_run(tmp_path):
+    (tmp_path / "dev.jsonl").write_text(_ticket() + "\n")
+    with pytest.raises(SystemExit, match="no smoke-test tickets"):
+        load_split("dev", tmp_path, smoke=True)
+    assert len(load_split("dev", tmp_path, smoke=False)) == 1
+
+
+def test_tickets_default_to_not_being_smoke_tests():
+    assert Ticket.model_validate_json(_ticket()).smoke_test is False

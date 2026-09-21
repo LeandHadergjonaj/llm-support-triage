@@ -54,6 +54,7 @@ All provider-specific code lives in `src/triage/llm.py`; nothing else imports th
 ```
 make setup      venv + dependencies
 make data       build the eval set (drafts labels; costs money, cached on disk)
+make smoke      ~1c end-to-end pipeline check on 16 tickets (never an eval set)
 make eval       score the baseline on dev            <-- the main one
 make eval-test  score on the held-out test split
 make review     export a label sample for hand correction

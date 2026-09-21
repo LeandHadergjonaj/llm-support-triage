@@ -13,25 +13,48 @@ import json
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
+from pathlib import Path
 
 from pydantic import ValidationError
 
 from triage import baseline
-from triage.llm import DEFAULT_MODEL, REPO_ROOT, Usage, call_json, get_client
+from triage.llm import DEFAULT_MODEL, EFFORTS, REPO_ROOT, Usage, call_json, get_client
 from triage.metrics import score_slices
 from triage.schema import Prediction, Ticket, prediction_json_schema
 
 EVAL_DIR = REPO_ROOT / "data" / "eval"
 RESULTS = REPO_ROOT / "results"
+SMOKE_EVAL_DIR = REPO_ROOT / "data" / "smoke"
+SMOKE_RESULTS = RESULTS / "smoke"
+
+SMOKE_BANNER = (
+    "> **SMOKE TEST -- NOT A BASELINE.** A handful of tickets, labelled by a cheap "
+    "model at low effort, run to prove the pipeline works end to end. The accuracy "
+    "figures below are meaningless as a measure of the system."
+)
 
 
-def load_split(split: str) -> list[Ticket]:
-    path = EVAL_DIR / f"{split}.jsonl"
+def load_split(split: str, eval_dir: Path, smoke: bool) -> list[Ticket]:
+    path = eval_dir / f"{split}.jsonl"
     if not path.exists():
         raise SystemExit(f"{path} not found. Run: make data")
-    return [
+    tickets = [
         Ticket.model_validate_json(line) for line in path.read_text().splitlines() if line.strip()
     ]
+    # The two directions of the same guard: a smoke set holds cheap-model labels on a
+    # handful of tickets, so its numbers are not a baseline and must never be filed as
+    # one; and --smoke pointed at the real set would overwrite nothing but would report
+    # a real run under a smoke-test heading.
+    stamped = [t.id for t in tickets if t.smoke_test]
+    if stamped and not smoke:
+        raise SystemExit(
+            f"{path} contains smoke-test tickets ({len(stamped)} of {len(tickets)}). "
+            "These are not an eval set. Run `make data` to build the real one, or pass "
+            "--smoke to score this as a pipeline check."
+        )
+    if smoke and not stamped:
+        raise SystemExit(f"--smoke was passed but {path} holds no smoke-test tickets.")
+    return tickets
 
 
 def run(tickets: list[Ticket], model: str, workers: int, effort: str) -> tuple[list[dict], Usage]:
@@ -85,9 +108,11 @@ def markdown_summary(record: dict) -> str:
     esc = overall["escalation"]
     reviewed = record["label_quality"]["human_reviewed"]
 
+    smoke = record["label_quality"].get("smoke_test")
     lines = [
         f"# Baseline results -- {meta['split']} split",
         "",
+        *([SMOKE_BANNER, ""] if smoke else []),
         f"- Prompt: `{meta['prompt_version']}`",
         f"- Model: `{meta['model']}` (effort `{meta['effort']}`)",
         f"- Run at: {meta['started_at']}",
@@ -195,11 +220,27 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--split", choices=["dev", "test"], default="dev")
     parser.add_argument("--model", default=DEFAULT_MODEL)
-    parser.add_argument("--effort", default="high", choices=["low", "medium", "high", "xhigh", "max"])
+    parser.add_argument("--effort", default="high", choices=EFFORTS)
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--limit", type=int, default=None, help="Score only the first N tickets.")
     parser.add_argument("--tag", default=None, help="Label this run in the results filename.")
+    parser.add_argument(
+        "--smoke",
+        action="store_true",
+        help=(
+            "Score the throwaway set in data/smoke/ and write to results/smoke/. "
+            "Checks the pipeline runs; produces no baseline and no latest_*.json."
+        ),
+    )
     args = parser.parse_args()
+
+    eval_dir = SMOKE_EVAL_DIR if args.smoke else EVAL_DIR
+    results_dir = SMOKE_RESULTS if args.smoke else RESULTS
+    if args.smoke:
+        print(
+            "SMOKE TEST: scoring cheap-model labels in data/smoke/. These are not "
+            "baseline numbers and results/latest_*.json is left untouched.\n"
+        )
 
     if args.split == "test":
         print(
@@ -207,7 +248,7 @@ def main() -> int:
             file=sys.stderr,
         )
 
-    tickets = load_split(args.split)
+    tickets = load_split(args.split, eval_dir, args.smoke)
     if args.limit:
         tickets = tickets[: args.limit]
 
@@ -229,25 +270,33 @@ def main() -> int:
             "urgency_and_escalation_labels": "model_drafted",
             "human_reviewed": sum(1 for r in rows if r["human_reviewed"]),
             "total": len(rows),
+            "smoke_test": args.smoke,
+            "labelers": sorted({
+                f"{t.labeler.model} (effort {t.labeler.effort})" for t in tickets if t.labeler
+            }),
         },
         "usage": usage.summary(args.model),
         "scores": score_slices(rows),
         "predictions": rows,
     }
 
-    RESULTS.mkdir(exist_ok=True)
+    results_dir.mkdir(parents=True, exist_ok=True)
     stamp = started.strftime("%Y%m%dT%H%M%SZ")
     tag = f"_{args.tag}" if args.tag else ""
     name = f"{stamp}_{baseline.VERSION}_{args.split}{tag}"
-    (RESULTS / f"{name}.json").write_text(json.dumps(record, indent=2, ensure_ascii=False))
+    (results_dir / f"{name}.json").write_text(json.dumps(record, indent=2, ensure_ascii=False))
     summary = markdown_summary(record)
-    (RESULTS / f"{name}.md").write_text(summary)
-    (RESULTS / f"latest_{args.split}.json").write_text(
-        json.dumps(record, indent=2, ensure_ascii=False)
-    )
+    (results_dir / f"{name}.md").write_text(summary)
+    # latest_<split>.json is the fixed bar later versions are compared against, so only
+    # a real run is allowed to move it.
+    if not args.smoke:
+        (results_dir / f"latest_{args.split}.json").write_text(
+            json.dumps(record, indent=2, ensure_ascii=False)
+        )
 
     print("\n" + summary)
-    print(f"\nWrote results/{name}.json and results/{name}.md")
+    rel = results_dir.relative_to(REPO_ROOT)
+    print(f"\nWrote {rel}/{name}.json and {rel}/{name}.md")
     return 0
 
 

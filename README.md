@@ -14,6 +14,7 @@ agent and no UI yet, on purpose.
 make setup                                    # venv + dependencies
 cp .env.example .env && $EDITOR .env          # add OPENAI_API_KEY
 .venv/bin/python scripts/fetch_dataset.py     # 19 MB upstream CSV
+make smoke                                    # optional: ~1c end-to-end check of the pipeline
 make data                                     # build the eval set (drafts labels; costs money)
 make eval                                     # score the baseline on dev  <-- the command
 ```
@@ -21,24 +22,37 @@ make eval                                     # score the baseline on dev  <-- t
 `make eval` prints a summary and writes it to `results/`. `make test` runs the checks that
 need no API key.
 
+`make smoke` runs all five stages over 16 tickets on the cheapest model at zero reasoning
+effort, writing to `data/smoke/` and `results/smoke/` (both gitignored). It proves the
+plumbing works before spending on a real run. It is **not** an evaluation: every ticket it
+builds is stamped `smoke_test`, and `make eval` refuses to score a set carrying that stamp.
+
 ### What a run costs
 
-Estimates, not measurements — nothing has been run yet. Derived from measured prompt
-sizes (labeller system prompt ~2,200 tokens, baseline ~1,200, tickets average 64
-characters) against [OpenAI's published rates](https://developers.openai.com/api/docs/pricing)
-read on 2026-09-21. The range spans 200–700 output tokens per call, since reasoning
-tokens are billed as output and vary with effort and ticket difficulty.
+Projections, not yet a full measurement — but grounded in real calls rather than in
+guessed token counts. Input token counts and cache behaviour are measured over the 30
+calls of a `make smoke` run; output token counts come from eight `effort=high` calls on
+the two candidate models, one short ticket and one hard case per model per stage. The
+range spans that pair: the low end weights them by the set's actual composition (216
+Bitext tickets to 36 authored hard cases), the high end assumes a 50/50 split. Rates are
+[OpenAI's published ones](https://developers.openai.com/api/docs/pricing) read 2026-09-21.
 
 | Stage | Calls | `gpt-6-astra` (default) | `gpt-5.6-terra` |
 |---|---:|---:|---:|
-| `make data` — draft 252 labels (one-off, cached to disk) | 252 | $3.35 – $9.65 | $0.77 – $2.28 |
-| `make eval` — dev | 144 | $1.77 – $5.37 | $0.41 – $1.27 |
-| `make eval-test` — held-out test | 108 | $1.35 – $4.05 | $0.31 – $0.96 |
-| **All three** | 504 | **$6.47 – $19.07** | **$1.49 – $4.51** |
+| `make data` — draft 252 labels (one-off, cached to disk) | 252 | $6.18 – $9.05 | $0.60 – $1.08 |
+| `make eval` — dev | 144 | $2.24 – $3.70 | $0.20 – $0.33 |
+| `make eval-test` — held-out test | 108 | $1.68 – $2.77 | $0.15 – $0.24 |
+| **All three** | 504 | **$10.10 – $15.53** | **$0.95 – $1.65** |
+
+Reasoning tokens are billed as output and dominate: at `effort=high` `gpt-6-astra` spent
+two to three times as many output tokens per ticket as `gpt-5.6-terra`, on top of an
+output rate four times higher. Prompt caching pulls the other way — 92% of labelling
+input tokens and 97% of scoring input tokens came back from cache, because the system
+prompt is byte-identical across every ticket in a run.
 
 Set `TRIAGE_MODEL=gpt-5.6-terra` in `.env`, or pass `--model`, to run the cheaper tier.
 Actual cost is reported by every run from the API's own usage figures, so the first real
-run replaces these estimates with measurements.
+run replaces these projections with measurements.
 
 ## What is here
 

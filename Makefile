@@ -1,4 +1,4 @@
-.PHONY: setup data review eval eval-test test clean
+.PHONY: setup data smoke review eval eval-test test clean
 
 PY := .venv/bin/python
 
@@ -8,6 +8,12 @@ setup:                     ## Create venv and install dependencies
 
 data:                      ## Fetch upstream dataset and build the eval set (needs API key for label drafting)
 	$(PY) -m triage.build_dataset
+
+smoke:                     ## Cheap end-to-end pipeline check on ~16 tickets (not an eval)
+	$(PY) -m triage.build_dataset --smoke 16 --model gpt-5.6-luna --effort none
+	$(PY) -m triage.evaluate --split dev --smoke --model gpt-5.6-luna --effort none
+	$(PY) -m triage.export_review --smoke -n 8
+	$(PY) -m triage.import_review --smoke
 
 review:                    ## Re-export the human-review sample from the current eval set
 	$(PY) -m triage.export_review

@@ -11,6 +11,10 @@ venv/
 .pytest_cache/
 .ruff_cache/
 
+# Smoke-test artefacts: throwaway cheap-model output, never part of the eval set
+data/smoke/
+results/smoke/
+
 # Raw upstream dataset (19 MB; fetched by scripts/fetch_dataset.py)
 data/raw/
 

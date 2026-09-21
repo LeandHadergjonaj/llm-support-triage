@@ -39,6 +39,10 @@ PRICING_PER_MTOK: dict[str, tuple[float, float, float]] = {
 
 CACHE_WRITE_MULTIPLIER = 1.25
 
+# Reasoning efforts accepted by the CLIs, cheapest first. `none` skips reasoning
+# altogether; it is what the smoke test uses and is not appropriate for a real run.
+EFFORTS = ("none", "low", "medium", "high", "xhigh", "max")
+
 
 @dataclass
 class Usage:

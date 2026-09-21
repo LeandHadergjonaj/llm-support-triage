@@ -30,6 +30,17 @@ class LabelProvenance(BaseModel):
     escalate: Literal["model_drafted"]
 
 
+class Labeler(BaseModel):
+    """Which model drafted the labels on this ticket, and how hard it thought.
+
+    Recorded per ticket so a cheap throwaway run can never be mistaken for the real
+    eval set just by looking at the file.
+    """
+
+    model: str
+    effort: str
+
+
 class Ticket(BaseModel):
     """One evaluation ticket."""
 
@@ -40,6 +51,11 @@ class Ticket(BaseModel):
     hard_case_kind: str | None = None
     labels: Labels
     label_provenance: LabelProvenance
+    labeler: Labeler | None = None
+    # True on throwaway pipeline-check sets built by `--smoke`. Such a set is never a
+    # valid eval set: it is tiny and its labels come from whatever cheap model was to
+    # hand. `evaluate.py` refuses to score one as a baseline.
+    smoke_test: bool = False
     human_reviewed: bool = False
     review_note: str | None = None
     # Provenance back to the upstream row, null for authored cases.

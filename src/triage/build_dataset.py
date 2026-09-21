@@ -23,15 +23,16 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from triage.labeler import labeler_json_schema, labeler_system, labeler_user
-from triage.llm import DEFAULT_MODEL, REPO_ROOT, Usage, call_json, get_client
+from triage.llm import DEFAULT_MODEL, EFFORTS, REPO_ROOT, Usage, call_json, get_client
 from triage.taxonomy import BITEXT_INTENT_TO_CATEGORY
 
 DATA = REPO_ROOT / "data"
 RAW_CSV = DATA / "raw" / "bitext_customer_support.csv"
 HARD_CASES = DATA / "hard_cases.jsonl"
 EVAL = DATA / "eval"
-SAMPLED = EVAL / "_sampled.jsonl"
-DRAFTED = EVAL / "_drafted.jsonl"
+# A --smoke build writes here instead, so a cheap pipeline check can never overwrite
+# the real eval set or its cached drafts.
+SMOKE = DATA / "smoke"
 
 SEED = 20260921
 PER_CATEGORY = 24  # 9 Bitext-backed categories -> 216, plus 36 authored hard cases
@@ -186,10 +187,51 @@ def stage_sample() -> list[dict]:
     return tickets
 
 
+def take_subset(tickets: list[dict], limit: int) -> list[dict]:
+    """Cut the sample down to `limit` tickets for a pipeline check, not an evaluation.
+
+    Spread across hard-case kinds and Bitext categories round-robin rather than taken
+    off the top, so a handful of tickets still exercises the awkward paths: safety,
+    security, legal, high-value refunds. Ids are assigned before this runs, so a subset
+    ticket keeps the id it has in the full set and stays traceable back to it.
+    """
+    if limit >= len(tickets):
+        return tickets
+
+    hard_quota = min(max(3, limit // 3), sum(1 for t in tickets if t["hard_case"]))
+
+    def round_robin(rows: list[dict], key: str, quota: int) -> list[dict]:
+        # The bucket order is shuffled, not alphabetical: taking kinds in name order
+        # would always drop `safety` and `security` off the end, which are the two the
+        # escalation path most needs to exercise. Seeded, so the subset is reproducible.
+        buckets: dict[str, list[dict]] = defaultdict(list)
+        for row in rows:
+            buckets[row[key] or ""].append(row)
+        order = sorted(buckets)
+        random.Random(SEED + 2).shuffle(order)
+        picked: list[dict] = []
+        while len(picked) < quota:
+            before = len(picked)
+            for name in order:
+                if buckets[name] and len(picked) < quota:
+                    picked.append(buckets[name].pop(0))
+            if len(picked) == before:
+                break
+        return picked
+
+    hard = round_robin([t for t in tickets if t["hard_case"]], "hard_case_kind", hard_quota)
+    easy = round_robin(
+        [t for t in tickets if not t["hard_case"]], "mapped_intent", limit - len(hard)
+    )
+    return sorted(hard + easy, key=lambda t: t["id"])
+
+
 # --- Stage 2: draft labels --------------------------------------------------
 
 
-def stage_label(tickets: list[dict], model: str, workers: int) -> tuple[list[dict], Usage]:
+def stage_label(
+    tickets: list[dict], model: str, workers: int, effort: str
+) -> tuple[list[dict], Usage]:
     client = get_client()
     system = labeler_system()
     schema = labeler_json_schema()
@@ -202,6 +244,7 @@ def stage_label(tickets: list[dict], model: str, workers: int) -> tuple[list[dic
             system=system,
             user=labeler_user(ticket["text"]),
             json_schema=schema,
+            effort=effort,
         )
         return {**ticket, "draft": draft, "_usage": usage}
 
@@ -218,7 +261,7 @@ def stage_label(tickets: list[dict], model: str, workers: int) -> tuple[list[dic
     return labelled, total
 
 
-def assemble(labelled: list[dict]) -> list[dict]:
+def assemble(labelled: list[dict], model: str, effort: str, smoke: bool) -> list[dict]:
     """Turn drafts into final tickets, deciding which intent is authoritative."""
     out = []
     for row in labelled:
@@ -251,6 +294,8 @@ def assemble(labelled: list[dict]) -> list[dict]:
                     "urgency": "model_drafted",
                     "escalate": "model_drafted",
                 },
+                "labeler": {"model": model, "effort": effort},
+                "smoke_test": smoke,
                 "human_reviewed": False,
                 "review_note": None,
                 "bitext_intent": row["bitext_intent"],
@@ -304,38 +349,65 @@ def write_jsonl(path: Path, rows: list[dict]) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--effort", default="high", choices=EFFORTS)
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument(
         "--relabel",
         action="store_true",
         help="Re-draft labels even if a cached draft exists (costs money).",
     )
+    parser.add_argument(
+        "--smoke",
+        type=int,
+        metavar="N",
+        default=None,
+        help=(
+            "Build a throwaway N-ticket set in data/smoke/ to check the pipeline runs. "
+            "NOT an eval set: every ticket is stamped smoke_test and evaluate.py "
+            "refuses to score it as a baseline."
+        ),
+    )
     args = parser.parse_args()
+
+    smoke = args.smoke is not None
+    out_dir = SMOKE if smoke else EVAL
+    sampled_path = out_dir / "_sampled.jsonl"
+    drafted_path = out_dir / "_drafted.jsonl"
+    if smoke:
+        print(
+            f"SMOKE TEST: {args.smoke} tickets -> {out_dir.relative_to(REPO_ROOT)}/. "
+            "Throwaway pipeline check; not an eval set.\n"
+        )
 
     print("Stage 1: sampling")
     tickets = stage_sample()
-    write_jsonl(SAMPLED, tickets)
-    print(f"  {len(tickets)} tickets -> {SAMPLED.relative_to(REPO_ROOT)}")
+    if smoke:
+        tickets = take_subset(tickets, args.smoke)
+    write_jsonl(sampled_path, tickets)
+    print(f"  {len(tickets)} tickets -> {sampled_path.relative_to(REPO_ROOT)}")
 
-    if DRAFTED.exists() and not args.relabel:
-        print(f"Stage 2: reusing cached drafts ({DRAFTED.relative_to(REPO_ROOT)})")
-        labelled = [json.loads(line) for line in DRAFTED.read_text().splitlines() if line.strip()]
+    if drafted_path.exists() and not args.relabel:
+        print(f"Stage 2: reusing cached drafts ({drafted_path.relative_to(REPO_ROOT)})")
+        labelled = [
+            json.loads(line) for line in drafted_path.read_text().splitlines() if line.strip()
+        ]
         if {t["id"] for t in labelled} != {t["id"] for t in tickets}:
             raise SystemExit("Cached drafts do not match the current sample. Re-run --relabel.")
     else:
         print(f"Stage 2: drafting labels with {args.model} (this costs money)")
-        labelled, usage = stage_label(tickets, args.model, args.workers)
-        write_jsonl(DRAFTED, labelled)
+        labelled, usage = stage_label(tickets, args.model, args.workers, args.effort)
+        write_jsonl(drafted_path, labelled)
         print(f"  drafting usage: {json.dumps(usage.summary(args.model))}")
 
-    final = assemble(labelled)
+    final = assemble(labelled, args.model, args.effort, smoke)
 
     print("Stage 3: splitting")
     dev, test = stage_split(final)
-    write_jsonl(EVAL / "dev.jsonl", dev)
-    write_jsonl(EVAL / "test.jsonl", test)
-    print(f"  dev  {len(dev):4d} -> data/eval/dev.jsonl")
-    print(f"  test {len(test):4d} -> data/eval/test.jsonl")
+    write_jsonl(out_dir / "dev.jsonl", dev)
+    write_jsonl(out_dir / "test.jsonl", test)
+    rel = out_dir.relative_to(REPO_ROOT)
+    print(f"  dev  {len(dev):4d} -> {rel}/dev.jsonl")
+    print(f"  test {len(test):4d} -> {rel}/test.jsonl")
 
     uncertain = sum(1 for t in final if t["drafter_uncertain"])
     disagree = sum(1 for t in final if t["intent_disagreement"])

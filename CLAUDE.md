@@ -50,10 +50,24 @@ specific failure pattern it targeted (3 for 3) and cannot emit two classes of
 self-contradictory prediction by construction. See `DECISIONS.md` D-021 for the full,
 unflattering-where-it-should-be account.
 
-Deliberately *not* built yet: specialist answerers, retrieval over policy docs, the
-orders database, the review queue UI, deployment. Each of those is a later step and each
-will be measured against the baseline recorded in `results/` — **at the same brief
-version**.
+**Phase 3a complete: the client's knowledge and the answer eval are built; nothing answers
+tickets yet.** Not chasing more triage accuracy for now — the router's McNemar p was 0.73
+(dev) / 1.0 (test), and with errors down to single digits this eval set can no longer tell
+triage designs apart (D-022). Phase 3a is the measuring stick for Phase 3, same as Phase 1
+was for triage: `docs/knowledge_base/` (six policy documents, consistent with brief v3, with
+one planted cross-document inconsistency and a stated precedence rule), `data/orders/` (a
+30-order mock database), and `data/eval/answers_{dev,test}.jsonl` (36 tickets — 20 reused
+from Phase 1, 16 newly authored — each carrying an answer contract: `must_handle`,
+`expected_must_contain`, `expected_must_not_contain`, all traceable to a doc section or an
+order field). `src/triage/eval_answers.py` scores a candidates file against it; the judge is
+an LLM (`gpt-5.6-terra` by default) and that is **not independent verification**, for the
+same reason a same-family label review isn't (D-011) — see D-022 and the module's own
+docstring. Cost: $0, no API calls were needed to build this step.
+
+Deliberately *not* built yet: anything that answers a ticket, retrieval over the policy
+docs, the review queue UI, deployment. Each of those is a later step and each will be
+measured against the baseline recorded in `results/` — **at the same brief version** — and
+the answer eval above, once something exists to run it against.
 
 ## The rules this project runs on
 
@@ -140,6 +154,8 @@ make eval-router-test  score the router on the held-out test split
 make review     export the round-1 label sample for correction
 make review-round2  draw a fresh random block from the never-reviewed remainder
 make sweep      show which labels the current brief's rules would change (dry run)
+make eval-answers ANSWERS=path.jsonl       score candidate answers against the DEV answer eval
+make eval-answers-test ANSWERS=path.jsonl  score against the HELD-OUT TEST answer eval
 make spend      print total API spend recorded so far
 make test       checks that need no API key
 ```

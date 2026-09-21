@@ -11,6 +11,69 @@ differently — not every implementation choice.
 
 ## 2026-09-21
 
+### D-022 — Stop chasing triage accuracy; Phase 3a builds the client's knowledge and the answer eval, not an answering system
+
+**Not pursuing further triage-accuracy work on this eval set.** D-021 found no
+statistically significant difference between the router and the baseline (McNemar p=0.73
+dev, p=1.0 test). With per-run errors down to single digits — 6-8 tickets wrong out of
+144-108 depending on split — this eval set's sample size cannot distinguish one triage
+design from another any more; the McNemar test on this few disagreements has essentially no
+power. Getting a real answer would need either a much larger eval set or a design change big
+enough to move double-digit numbers of tickets, and nothing on the table right now is that.
+The router's individual components (the "make a claim" prompt fix, the policy layer, the
+confidence gate) stay as built — none of this is a regression, it is a statement that this
+project has extracted what this eval set can tell it about triage design, for now.
+
+**Phase 3a builds the measuring stick, not the thing being measured** — same shape as
+Phase 1 building the eval set and baseline before any triage design existed. Three
+artifacts, all authored by Claude Sonnet 5, none of it costing API spend:
+
+1. **`docs/knowledge_base/`** — six policy documents (returns & refunds, delivery &
+   shipping, cancellations & order changes, payments & billing, accounts, product safety),
+   consistent with `docs/client-brief.md` v3 wherever they overlap (the £100 threshold, the
+   pre-dispatch window, the account-admin urgency rule). One cross-document inconsistency is
+   planted on purpose — `returns_and_refunds.md`'s 5-working-day refund timeline vs
+   `delivery_and_shipping.md`'s 10-working-day figure for the delivery-charge portion of a
+   late order — with `returns_and_refunds.md` stating the precedence rule, so the answer
+   eval (`hl-a0003`) can check an answer resolves it correctly rather than picking whichever
+   document it retrieves first.
+2. **`data/orders/orders.jsonl`** — 30 synthetic orders, 27 tied to specific tickets already
+   in the eval set or the new answer eval (grounding real order facts to real tickets rather
+   than inventing generic ones), covering pre/post dispatch, refunds either side of £100
+   (including a combined-items case and an exact-£100 boundary case), a late delivery, a
+   short-shipment, and a case with no matching order at all (`53004`, deliberately absent).
+3. **`data/eval/answers_{dev,test}.jsonl`** — 36 tickets (20 reused from Phase 1, 16 newly
+   authored), each with an answer contract (`must_handle`, `expected_must_contain`,
+   `expected_must_not_contain`) instead of a triage label, and `src/triage/eval_answers.py`
+   to score a candidates file against it.
+
+**Two policy-content decisions made as the simulated client**, since the brief's taxonomy
+mentions these without defining them and there is no real client to ask (rule 9):
+
+- **A 15% restocking fee on large, two-person-delivery furniture returned for change of
+  mind**, waived for faults/damage/wrong item. The brief's `returns_and_refunds` category
+  already names "cancellation fees" as in scope (§3) without saying what one is; a flat
+  furniture-only fee is the simplest rule consistent with brief v3 §1's mention of
+  two-person delivery's operational cost, and it does not touch any label.
+- **A 5-working-day refund timeline from approval**, chosen as a round, defensible number
+  for a company this size and stated as authoritative in `returns_and_refunds.md` — see the
+  planted inconsistency above, which needs exactly one document to win.
+
+**The answer-eval judge is not independent verification, and this is stated up front.**
+`eval_answers.judge_ticket()` grades a candidate answer's content with an LLM, because the
+required/forbidden facts are natural-language claims a keyword match cannot check reliably.
+It defaults to this project's own triage model, `gpt-5.6-terra` — the same vendor, and
+potentially the same model, that a future answering system might also run on. That is the
+same shape of bias D-011 names for the label review: it can catch a badly grounded answer,
+but shares the generating model's blind spots and must never be quoted as human
+verification. Routing correctness (`handled_by` vs `must_handle`) needs no judge at all —
+it is an exact match — and is the one number in this eval that is not subject to this
+caveat.
+
+No API spend this step: `make test` covers the new data with no key needed
+(`test_orders_db_is_well_formed`, `test_answer_eval_set_is_well_formed_and_grounded`) and
+`tests/test_eval_answers.py` exercises the scorer's aggregation logic with a stubbed judge.
+
 ### D-021 — Router built: same model, a policy layer, a confidence gate — and it does not beat the baseline outside noise
 
 Phase 2's second half: build a triage design that beats the brief-v3 baseline (D-020) on

@@ -1,4 +1,4 @@
-.PHONY: setup data smoke review review-round2 import-review import-review-round2 sweep sweep-apply eval eval-test eval-router eval-router-test spend test clean
+.PHONY: setup data smoke review review-round2 import-review import-review-round2 sweep sweep-apply eval eval-test eval-router eval-router-test eval-answers eval-answers-test spend test clean
 
 PY := .venv/bin/python
 
@@ -47,6 +47,12 @@ eval-router:               ## Score the router on dev and compare it to results/
 
 eval-router-test:          ## Score the router on the HELD-OUT TEST split. Do not use while tuning.
 	$(PY) -m triage.evaluate_router --split test
+
+eval-answers:              ## Score a candidates.jsonl against the DEV answer eval (needs ANSWERS=path/to/candidates.jsonl)
+	$(PY) -m triage.eval_answers --split dev --answers $(ANSWERS)
+
+eval-answers-test:         ## Score against the HELD-OUT TEST answer eval. Do not use while tuning.
+	$(PY) -m triage.eval_answers --split test --answers $(ANSWERS)
 
 clean:
 	rm -rf results/*.json results/*.md

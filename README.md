@@ -3,13 +3,16 @@
 Routing customer support tickets for a fictional online homewares retailer: what is this
 ticket about, how urgent is it, and does a human need to handle it.
 
-This repository is at **step 2 of a staged build**. Step 1 was an evaluation set and a
-deliberately simple baseline — one LLM call per ticket — whose job is to be the bar every
-later, more complicated version has to beat. Step 2 settles the one open policy question
-the baseline could not answer on its own (`DECISIONS.md` D-018/D-020) and adds a router: a
-prompt fix, a deterministic policy layer, and a confidence gate that sends uncertain
-tickets to a human. It does **not** yet beat the baseline outside noise — see below. There
-is no retrieval, no answerer agent and no UI yet, on purpose.
+This repository is at **step 3a of a staged build**. Step 1 was an evaluation set and a
+deliberately simple baseline — one LLM call per ticket. Step 2 settled the one open policy
+question the baseline could not answer on its own (`DECISIONS.md` D-018/D-020) and added a
+router: a prompt fix, a deterministic policy layer, and a confidence gate. It did **not**
+beat the baseline outside noise (McNemar p=0.73 dev, p=1.0 test), and with errors down to
+single digits this eval set can no longer tell triage designs apart — see `DECISIONS.md`
+D-022. Step 3a stops chasing triage accuracy and builds the next measuring stick instead: a
+knowledge base (`docs/knowledge_base/`), a mock orders database (`data/orders/`), and an
+answer eval (`data/eval/answers_{dev,test}.jsonl`) for the answering system a later step
+will build. There is still no retrieval, no answerer agent and no UI, on purpose.
 
 ## Quick start
 
@@ -73,6 +76,10 @@ run replaces these projections with measurements.
 | `src/triage/router.py` | The router: a prompt fix, a deterministic policy layer, a confidence gate |
 | `src/triage/evaluate_router.py` | Runs the router over a split and compares it to the baseline of record |
 | `prompts/baseline_v1.md` | The baseline prompt, rendered so it can be read and diffed |
+| `docs/knowledge_base/` | Six policy documents an answering system will ground replies in, consistent with the brief, with one planted cross-document inconsistency |
+| `data/orders/` | A 30-order mock database, mostly tied to specific tickets rather than generic filler |
+| `data/eval/answers_{dev,test}.jsonl` | The answer eval: 36 tickets with `must_handle` + grounding contracts instead of triage labels |
+| `src/triage/eval_answers.py` | Scores a candidate-answers file against the answer eval; states its own judge bias |
 | `data/README.md` | Licence position, provenance, and every transformation applied |
 | `tests/` | Checks that run without an API key |
 
@@ -286,6 +293,46 @@ A sweep is a **consistency mechanism, not a check**: it finds only the errors it
 describe. Swept tickets are therefore *not* marked `reviewed` and still count as unchecked
 in the error rate above — a test asserts it — and two of them landed in round 2's block,
 where they were confirmed.
+
+## Phase 3a: knowledge base, orders database, answer eval
+
+Nothing in this phase answers a ticket. It exists so the next phase has something to
+ground answers in and something to be scored against, in that order, per `DECISIONS.md`
+D-022.
+
+**`docs/knowledge_base/`** — six policy documents (returns & refunds, delivery & shipping,
+cancellations & order changes, payments & billing, accounts, product safety), consistent
+with `docs/client-brief.md` v3 wherever they overlap. They read like real staff documents:
+cross-referenced, with exceptions buried mid-paragraph rather than bulleted up front. One
+inconsistency is planted on purpose — `returns_and_refunds.md` states a 5-working-day
+refund timeline as authoritative; `delivery_and_shipping.md`'s late-delivery section
+quotes 10 working days for the delivery-charge portion of a late-order refund, with no
+cross-reference back. `returns_and_refunds.md` states the precedence rule.
+
+**`data/orders/orders.jsonl`** — 30 synthetic orders. 27 are tied to a specific ticket
+already in `data/eval/` or `answers_{dev,test}.jsonl`, so the eval is grounded in facts
+that actually match what a ticket says, not generic filler. Covers pre/post dispatch,
+refunds either side of £100 (a combined-items case at £132, an exact-£100 boundary case),
+a late delivery, a short-shipment, and one ticket that asks about an order that does not
+exist (`53004`), on purpose.
+
+**`data/eval/answers_{dev,test}.jsonl`** — 36 tickets, 20/16 dev-test, 20 reused from the
+Phase 1 eval set (to ground facts, not just labels) and 16 newly authored to cover what
+Phase 1 never needed to: refund-amount boundaries on both sides of £100, the pre-dispatch
+vs dispatched-vs-delivered distinction for address changes, a customer misstating an
+order's price, and the planted inconsistency above. Each ticket carries `must_handle`
+(`self`/`human`) plus `expected_must_contain` / `expected_must_not_contain`, every item
+traceable to a knowledge-base section or an order field.
+
+**Scoring** (`src/triage/eval_answers.py`): routing (`handled_by` vs `must_handle`) is an
+exact match, no judgement involved. Content — did the answer state the right facts, did it
+avoid inventing anything — is graded by an LLM (`gpt-5.6-terra` by default), because the
+criteria are natural-language claims a keyword match cannot check reliably. **This is not
+independent verification**: the judge defaults to this project's own triage model, the
+same vendor and potentially the same model a future answering system would run on, which
+is the same shape of bias `DECISIONS.md` D-011 names for the label review. `tests/test_eval_answers.py`
+exercises the aggregation logic with a stubbed judge, so the scorer's own correctness
+does not depend on the API. No API spend was needed to build this step.
 
 ## Status
 

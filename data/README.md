@@ -113,3 +113,40 @@ hard-case kind for authored ones), seeded at 20260921.
 
 **The test split is held out.** It is not used to tune the prompt. `make eval` runs dev;
 scoring test is a separate command that prints a warning.
+
+## `eval/answers_{dev,test}.jsonl` — the Phase 3 answer eval
+
+Built entirely by Claude Sonnet 5, with **no API spend** (no label drafting was needed — see
+below). 36 tickets, split 20 dev / 16 test the same way as the triage set (stratified by
+`must_handle`; test untouched for tuning). Every one carries `origin`: `phase1_reused` (20,
+the `source_ticket_id` names the original triage ticket) or `authored` (16, new `hl-a00NN`
+ids). See `docs/knowledge_base/README.md` and `data/orders/README.md` for the material these
+tickets are graded against.
+
+Each ticket has, instead of a triage label, an **answer contract**:
+
+| Field | Meaning |
+|---|---|
+| `must_handle` | `self` (system should answer it) or `human` (system must hand it off) |
+| `order_id` | The order to ground facts in, or `null` |
+| `expected_must_contain` | Facts a correct answer states, each traceable to a `docs/knowledge_base/*.md` section or an `orders.jsonl` field |
+| `expected_must_not_contain` | Invented facts, unwarranted promises, or wrong-document figures a correct answer must avoid |
+| `grounding_refs` | The specific doc sections / order records a reviewer would check the answer against |
+| `author_note` | What the ticket was written to test — design intent, not a label |
+
+No labels were **drafted** for this set because there is nothing to draft: `must_handle` and
+the reused tickets' `intent`/`urgency`/`escalate` are read straight off the already-scored
+triage labels (`labels_provenance` in `dev.jsonl`/`test.jsonl`), and the `expected_*`
+criteria were written by hand against the knowledge base and orders DB, both authored in the
+same step. This keeps Phase 3a's spend at effectively £0, per the brief's "keep spend
+minimal" instruction for this step.
+
+**What this set does and doesn't test.** It tests whether a *given* answer is grounded and
+appropriately routed — it says nothing about answer quality on its own, because no answering
+system exists yet (deliberately: this step builds the measuring stick before the thing being
+measured, same as Phase 1). It reuses 20 Phase 1 tickets to shore up thin spots the triage
+set never needed to cover (order/refund *facts*, not just labels) and adds 16 new tickets for
+cases Phase 1 had no reason to include: refund-amount boundaries either side of £100 (single
+and combined), the pre-dispatch vs dispatched-vs-delivered address-change distinction, a
+lookup against a nonexistent order, a customer misstating an order's facts, and the planted
+cross-document inconsistency in `docs/knowledge_base/` (see its README).

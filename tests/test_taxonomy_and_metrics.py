@@ -721,3 +721,54 @@ def test_the_label_set_obeys_the_v2_rules_it_was_swept_for():
                 assert labels["intent"] == "out_of_scope", t["id"]
             if "product_safety" in labels["escalation_reasons"]:
                 assert labels["urgency"] == "high", t["id"]
+
+
+def test_orders_db_is_well_formed():
+    path = REPO / "data" / "orders" / "orders.jsonl"
+    orders = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+    ids = [o["order_id"] for o in orders]
+    assert len(ids) == len(set(ids)), "duplicate order_id in orders.jsonl"
+    for o in orders:
+        assert o["dispatch_state"] in ("not_dispatched", "dispatched", "delivered"), o["order_id"]
+        assert o["status"] in ("active", "cancelled", "return_requested"), o["order_id"]
+        total = round(sum(i["unit_price_gbp"] * i["qty"] for i in o["items"]), 2)
+        assert total == o["order_total_gbp"], f"{o['order_id']}: items sum to {total}, not {o['order_total_gbp']}"
+
+
+def test_answer_eval_set_is_well_formed_and_grounded():
+    """Phase 3a's answer eval: routing and grounding facts must actually be checkable."""
+    triage_ids = set()
+    for split in ("dev", "test"):
+        path = REPO / "data" / "eval" / f"{split}.jsonl"
+        triage_ids |= {
+            json.loads(line)["id"] for line in path.read_text().splitlines() if line.strip()
+        }
+    order_ids = {
+        json.loads(line)["order_id"]
+        for line in (REPO / "data" / "orders" / "orders.jsonl").read_text().splitlines()
+        if line.strip()
+    }
+
+    seen_ids = set()
+    for split in ("dev", "test"):
+        path = REPO / "data" / "eval" / f"answers_{split}.jsonl"
+        for line in path.read_text().splitlines():
+            if not line.strip():
+                continue
+            t = json.loads(line)
+            assert t["id"] not in seen_ids, f"duplicate answer-eval id {t['id']}"
+            seen_ids.add(t["id"])
+            assert t["must_handle"] in ("self", "human"), t["id"]
+            assert t["origin"] in ("phase1_reused", "authored"), t["id"]
+            assert t["expected_must_contain"], f"{t['id']}: no facts to check an answer against"
+            if t["origin"] == "phase1_reused":
+                assert t["source_ticket_id"] in triage_ids, t["id"]
+                assert t["source_ticket_id"] == t["id"], t["id"]
+            # hl-a0004 is the one deliberate exception: it tests grounding against an
+            # order that does not exist.
+            if t["order_id"] and t["id"] != "hl-a0004":
+                assert t["order_id"] in order_ids, f"{t['id']}: order {t['order_id']} not in orders.jsonl"
+            blob = json.dumps(t).lower()
+            for banned in ("human_reviewed", "human review", "hand-labelled",
+                           "hand labelled", "hand-labeled", "reviewed by a human"):
+                assert banned not in blob, f"{t['id']} claims {banned!r}"

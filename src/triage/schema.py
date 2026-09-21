@@ -23,11 +23,16 @@ class Labels(BaseModel):
 
 
 class LabelProvenance(BaseModel):
-    """Where each label came from. Nothing here is hand-labelled unless `human_reviewed`."""
+    """Where each label came from.
 
-    intent: Literal["bitext_mapped", "model_drafted"]
-    urgency: Literal["model_drafted"]
-    escalate: Literal["model_drafted"]
+    `second_opinion` means the label was corrected during the review pass by a model of a
+    different family from the drafter. No label in this project is written by a person:
+    nothing here is hand-labelled, and `second_opinion` must never be read as if it were.
+    """
+
+    intent: Literal["bitext_mapped", "model_drafted", "second_opinion"]
+    urgency: Literal["model_drafted", "second_opinion"]
+    escalate: Literal["model_drafted", "second_opinion"]
 
 
 class Labeler(BaseModel):
@@ -68,7 +73,10 @@ class Ticket(BaseModel):
     # valid eval set: it is tiny and its labels come from whatever cheap model was to
     # hand. `evaluate.py` refuses to score one as a baseline.
     smoke_test: bool = False
-    human_reviewed: bool = False
+    # True once the ticket has been through the second-opinion review pass. That pass is
+    # run by a model of a different family from the drafter, NOT by a person.
+    reviewed: bool = False
+    reviewed_by: str | None = None
     review_selection: ReviewSelection | None = None
     review_corrected: bool | None = None
     review_note: str | None = None

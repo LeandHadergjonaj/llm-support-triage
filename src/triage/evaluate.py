@@ -28,6 +28,7 @@ from triage.llm import (
     call_json,
     get_client,
     record_spend,
+    total_spend,
 )
 from triage.metrics import label_error_rate, score_escalation, score_slices
 from triage.schema import Prediction, Ticket, prediction_json_schema
@@ -77,6 +78,43 @@ def _all_tickets(eval_dir: str | Path) -> list[dict]:
                 json.loads(line) for line in path.read_text().splitlines() if line.strip()
             ]
     return out
+
+
+def replay(results_path: str | Path, tickets: list[Ticket]) -> tuple[list[dict], Usage, dict]:
+    """Re-pair saved predictions with the current labels. Costs nothing.
+
+    After a review pass the model's answers are unchanged -- only the labels they are
+    marked against have moved. Re-running the baseline would spend money to reproduce
+    predictions already on disk, and would not reproduce them exactly. Replaying is both
+    cheaper and a cleaner comparison: any movement in the scores is the labels moving,
+    with the predictions held fixed.
+    """
+    prior = json.loads(Path(results_path).read_text())
+    saved = {row["id"]: row for row in prior["predictions"]}
+    missing = [t.id for t in tickets if t.id not in saved]
+    if missing:
+        raise SystemExit(
+            f"{results_path} has no prediction for {len(missing)} ticket(s) in this "
+            f"split, e.g. {missing[:3]}. Re-scoring needs a results file from a complete "
+            f"run of the same split."
+        )
+    rows = []
+    for ticket in tickets:
+        row = dict(saved[ticket.id])
+        # Predictions are frozen; everything describing the ticket is refreshed.
+        row.update(
+            text=ticket.text,
+            hard_case=ticket.hard_case,
+            hard_case_kind=ticket.hard_case_kind,
+            reviewed=ticket.reviewed,
+            gold=ticket.labels.model_dump(),
+        )
+        rows.append(row)
+    rows.sort(key=lambda r: r["id"])
+    usage = Usage(**{k: v for k, v in prior["usage"].items() if k in
+                     ("input_tokens", "output_tokens", "cached_tokens",
+                      "cache_write_tokens", "reasoning_tokens", "calls")})
+    return rows, usage, prior["run"]
 
 
 def reconcile_escalations(eval_dir: str | Path, split: str, rows: list[dict]) -> dict:
@@ -163,7 +201,7 @@ def run(
             "text": ticket.text,
             "hard_case": ticket.hard_case,
             "hard_case_kind": ticket.hard_case_kind,
-            "human_reviewed": ticket.human_reviewed,
+            "reviewed": ticket.reviewed,
             "gold": ticket.labels.model_dump(),
             "pred": prediction.model_dump(),
             "_usage": usage,
@@ -200,8 +238,8 @@ def _label_error_lines(record: dict) -> list[str]:
             "",
             (
                 "Not yet measurable: no ticket in the random review block has been "
-                "checked by a human. Until it has, the accuracy figures above have no "
-                "known error bar on the labels themselves."
+                "through the review pass. Until it has, the accuracy figures above have "
+                "no known error bar on the labels themselves."
             ),
             "",
         ]
@@ -288,13 +326,24 @@ def markdown_summary(record: dict) -> str:
     overall = scores["overall"]
     esc = overall["escalation"]
     quality = record["label_quality"]
-    reviewed = quality["human_reviewed"]
+    reviewed = quality["reviewed"]
     n = overall["n"]
     maj = overall["urgency_vs_majority_class"]
 
     # The caveat that matters most goes first and is not softened. The same model drafted
     # these labels and produced these predictions, so a large part of the agreement below
     # is a model being consistent with itself.
+    reviewers = quality.get("reviewers") or []
+    who = ", ".join(reviewers) if reviewers else "nobody yet"
+    review_line = (
+        f"> **No label in this project has been checked by a person.** {reviewed} of {n} "
+        f"tickets in this split have been through a second-opinion review by {who}, "
+        f"a model of a different family from the drafter. That is a real "
+        f"independence check and it is not the same as human verification: where two "
+        f"models disagree you learn the label is contested, not which reading a person "
+        f"would have picked, and where they agree they may be agreeing about the same "
+        f"misreading."
+    )
     if quality.get("scored_against_own_labels"):
         caveat = (
             f"> ### :warning: These numbers are self-agreement, not accuracy\n>\n"
@@ -305,18 +354,18 @@ def markdown_summary(record: dict) -> str:
             f"by an unknown margin -- most of all on the judgement calls (urgency, "
             f"escalation) and least on intent, which for Bitext tickets comes from a "
             f"deterministic mapping rather than from the model.\n>\n"
-            f"> {reviewed} of {n} tickets in this split have been checked by a human. "
-            f"Until that number is meaningful, treat this as **a fixed bar for later "
-            f"versions to beat, not a measure of how good the triage is.** Later versions "
-            f"are scored on the same labels, so the comparison between them stays valid "
-            f"even while the absolute number does not."
+            + review_line
+            + "\n>\n> Treat this as **a fixed bar for later versions to beat, not a "
+            "measure of how good the triage is.** Later versions are scored on the same "
+            "labels, so the comparison between them stays valid even while the absolute "
+            "number does not."
         )
     else:
         caveat = (
-            f"> Reference labels for urgency and escalation are **model-drafted**, not "
-            f"hand-labelled. {reviewed} of {n} tickets in this split have been corrected "
-            f"by a human. Treat the absolute numbers as provisional; they are meaningful "
-            f"mainly as a fixed bar for later versions to beat."
+            "> Reference labels for urgency and escalation are **model-drafted**.\n>\n"
+            + review_line
+            + "\n>\n> Treat the absolute numbers as provisional; they are meaningful "
+            "mainly as a fixed bar for later versions to beat."
         )
 
     smoke = record["label_quality"].get("smoke_test")
@@ -329,6 +378,7 @@ def markdown_summary(record: dict) -> str:
         f"- Run at: {meta['started_at']}",
         f"- Tickets: {n}",
         f"- Reference labels drafted by: {', '.join(quality['labelers']) or 'unknown'}",
+        f"- Reviewed by: {who}",
         "",
         caveat,
         "",
@@ -468,6 +518,16 @@ def main() -> int:
     parser.add_argument("--limit", type=int, default=None, help="Score only the first N tickets.")
     parser.add_argument("--tag", default=None, help="Label this run in the results filename.")
     parser.add_argument(
+        "--rescore",
+        metavar="RESULTS_JSON",
+        default=None,
+        help=(
+            "Re-score the predictions saved in this results file against the current "
+            "labels, instead of calling the API. Use after a review pass: the model's "
+            "answers have not changed, only the labels they are marked against."
+        ),
+    )
+    parser.add_argument(
         "--max-cost",
         type=float,
         default=DEFAULT_BUDGET_USD,
@@ -503,32 +563,44 @@ def main() -> int:
         tickets = tickets[: args.limit]
 
     started = datetime.now(UTC)
-    budget = Budget(args.max_cost, args.model)
-    print(
-        f"Scoring {len(tickets)} {args.split} tickets with {args.model} "
-        f"(effort={args.effort}, cap ${args.max_cost:.2f})"
-    )
-    rows, usage = run(tickets, args.model, args.workers, args.effort, budget)
+    if args.rescore:
+        rows, usage, prior = replay(args.rescore, tickets)
+        model, effort, workers = prior["model"], prior["effort"], prior["workers"]
+        print(
+            f"Re-scored {len(rows)} saved {args.split} predictions from "
+            f"{Path(args.rescore).name} against the current labels. No API calls."
+        )
+    else:
+        model, effort, workers = args.model, args.effort, args.workers
+        budget = Budget(args.max_cost, args.model)
+        print(
+            f"Scoring {len(tickets)} {args.split} tickets with {args.model} "
+            f"(effort={args.effort}, cap ${args.max_cost:.2f})"
+        )
+        rows, usage = run(tickets, args.model, args.workers, args.effort, budget)
     incomplete = len(rows) < len(tickets)
 
     record = {
         "run": {
             "split": args.split,
             "prompt_version": baseline.VERSION,
-            "model": args.model,
-            "effort": args.effort,
-            "workers": args.workers,
+            "model": model,
+            "effort": effort,
+            "workers": workers,
+            "rescored_from": Path(args.rescore).name if args.rescore else None,
             "started_at": started.isoformat(timespec="seconds"),
             "tag": args.tag,
         },
         "label_quality": {
             "urgency_and_escalation_labels": "model_drafted",
-            "human_reviewed": sum(1 for r in rows if r["human_reviewed"]),
+            "reviewed": sum(1 for r in rows if r["reviewed"]),
             "total": len(rows),
             "smoke_test": args.smoke,
             "labelers": sorted({
                 f"{t.labeler.model} (effort {t.labeler.effort})" for t in tickets if t.labeler
             }),
+            "reviewers": sorted({t.reviewed_by for t in tickets if t.reviewed_by}),
+            "reviewed_by_a_person": False,
             # True when the model being scored also drafted the labels it is scored
             # against. It is then partly marking its own work, so agreement is inflated
             # by an unknown amount. Recorded per run so the caveat travels with the
@@ -538,7 +610,8 @@ def main() -> int:
             ),
         },
         "complete": not incomplete,
-        "usage": usage.summary(args.model),
+        # On a rescore this is the replayed run's usage, not new spend.
+        "usage": usage.summary(model) | {"inherited_from_replay": bool(args.rescore)},
         "escalation_reconciliation": reconcile_escalations(eval_dir, args.split, rows),
         # Measured over both splits: the random block spans the whole set, and cutting
         # it to one split would shrink the sample and bias it towards that split.
@@ -565,11 +638,16 @@ def main() -> int:
     print("\n" + summary)
     rel = results_dir.relative_to(REPO_ROOT)
     print(f"\nWrote {rel}/{name}.json and {rel}/{name}.md")
-    if not args.smoke:
+    # A rescore spends nothing: its usage is inherited from the run being replayed and
+    # was logged when that run happened. Logging it again would double-count against the
+    # $2 cap and make the ledger describe money that was never spent.
+    if not args.smoke and not args.rescore:
         running = record_spend(
-            f"evaluate:{args.split}", args.model, usage, note=f"{len(rows)} tickets"
+            f"evaluate:{args.split}", model, usage, note=f"{len(rows)} tickets"
         )
         print(f"Spend logged; project total now ${running:.4f}")
+    elif args.rescore:
+        print(f"No spend logged (replayed predictions); project total ${total_spend():.4f}")
     if incomplete:
         raise SystemExit(
             f"\nSTOPPED ON BUDGET after {len(rows)}/{len(tickets)} tickets "

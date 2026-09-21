@@ -184,10 +184,20 @@ def test_built_eval_set_validates_and_is_internally_consistent():
             # contradiction the label set must not contain.
             assert bool(ticket.labels.escalation_reasons) == ticket.labels.escalate, ticket.id
             raw = json.loads(line)
-            if raw["source"] == "bitext":
-                assert raw["label_provenance"]["intent"] == "bitext_mapped"
-            else:
-                assert raw["label_provenance"]["intent"] == "model_drafted"
+            # A reviewed ticket may carry `second_opinion` on any field the review
+            # changed; everything else keeps the provenance it was built with.
+            drafted = "bitext_mapped" if raw["source"] == "bitext" else "model_drafted"
+            assert raw["label_provenance"]["intent"] in (drafted, "second_opinion")
+            if raw["label_provenance"]["intent"] == "second_opinion":
+                assert raw["reviewed"], ticket.id
+            # No ticket may claim a person checked it. `human_agent_request` is a real
+            # category, so this bans the misleading phrasings, not the word.
+            blob = json.dumps(raw).lower()
+            for banned in ("human_reviewed", "human review", "hand-labelled",
+                           "hand labelled", "hand-labeled", "reviewed by a human"):
+                assert banned not in blob, f"{ticket.id} claims {banned!r}"
+            if raw["reviewed"]:
+                assert raw["reviewed_by"], ticket.id
 
 
 @pytest.mark.skipif(
@@ -276,7 +286,7 @@ def _fake_record(same_model: bool) -> dict:
             "text": "t",
             "hard_case": i == 0,
             "hard_case_kind": "safety" if i == 0 else None,
-            "human_reviewed": False,
+            "reviewed": False,
             "gold": {"intent": "product_issue", "urgency": "low" if i else "high",
                      "escalate": i == 0,
                      "escalation_reasons": ["product_safety"] if i == 0 else []},
@@ -290,7 +300,7 @@ def _fake_record(same_model: bool) -> dict:
     return {
         "run": {"split": "dev", "prompt_version": "baseline_v1", "model": "m",
                 "effort": "high", "workers": 8, "started_at": "now", "tag": None},
-        "label_quality": {"human_reviewed": 0, "total": len(rows), "smoke_test": False,
+        "label_quality": {"reviewed": 0, "total": len(rows), "smoke_test": False,
                           "labelers": ["m (effort high)"],
                           "scored_against_own_labels": same_model},
         "usage": {"total_cost_usd": 0.1, "calls": len(rows), "cost_per_ticket_usd": 0.025,
@@ -383,7 +393,7 @@ def test_wilson_interval_narrows_as_the_sample_grows():
 
 
 def _reviewed(ticket_id, in_block, corrected):
-    return {"id": ticket_id, "human_reviewed": True, "review_corrected": corrected,
+    return {"id": ticket_id, "reviewed": True, "review_corrected": corrected,
             "review_selection": {"reason": "r", "in_random_block": in_block}}
 
 
@@ -391,7 +401,7 @@ def test_label_error_rate_keeps_the_random_block_separate():
     tickets = (
         [_reviewed(f"r{i}", True, i < 4) for i in range(30)]
         + [_reviewed(f"t{i}", False, i < 9) for i in range(25)]
-        + [{"id": "unreviewed", "human_reviewed": False}]
+        + [{"id": "unreviewed", "reviewed": False}]
     )
     rates = label_error_rate(tickets)
     assert rates["random_block"] == {
@@ -405,7 +415,7 @@ def test_label_error_rate_keeps_the_random_block_separate():
 
 
 def test_label_error_rate_is_none_before_anyone_reviews():
-    rates = label_error_rate([{"id": "a", "human_reviewed": False}])
+    rates = label_error_rate([{"id": "a", "reviewed": False}])
     assert rates["random_block"]["error_rate"] is None
     assert rates["random_block"]["reviewed"] == 0
 
@@ -431,3 +441,21 @@ def test_review_sample_growth_never_drops_a_row():
     before = {r["id"]: why for r, why, _ in first}
     after = {r["id"]: why for r, why, _ in second}
     assert all(after[i] == why for i, why in before.items())
+
+
+def test_rescore_does_not_log_spend(tmp_path, monkeypatch):
+    """Replaying saved predictions costs nothing, so it must not move the ledger.
+
+    Logging the replayed run's usage again would double-count it against the $2 cap and
+    make the ledger describe money that was never spent.
+    """
+    from triage import llm
+
+    ledger = tmp_path / "spend_log.jsonl"
+    monkeypatch.setattr(llm, "SPEND_LOG", ledger)
+    llm.record_spend("real_run", DEFAULT_MODEL, Usage(input_tokens=1000, calls=1))
+    after_real = llm.total_spend()
+    assert after_real > 0
+    # A rescore path must not call record_spend at all; the total stays put.
+    assert llm.total_spend() == after_real
+    assert ledger.read_text().count("\n") == 1

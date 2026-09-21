@@ -87,7 +87,9 @@ not a label.
 
 Urgency and escalation labels were drafted by `gpt-6-astra` reading the full client brief
 (`src/triage/labeler.py`), one ticket at a time, blind to the upstream intent. They are
-**not hand-labelled**. `human_reviewed` is `false` on every ticket a person has not yet
+**not hand-labelled**, and no label has been checked by a person at any point. Some have
+been through a second-opinion review by `claude-opus-5`, a different model family from the
+drafter; `reviewed` and `reviewed_by` say which. `reviewed` is `false` on every ticket not yet
 checked, and `label_provenance` records the source of each field individually.
 
 This matters for how the baseline's scores should be read: the baseline is being measured

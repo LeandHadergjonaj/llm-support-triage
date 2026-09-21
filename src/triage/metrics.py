@@ -69,7 +69,7 @@ def label_error_rate(tickets: list[dict]) -> dict:
     """
 
     def measure(subset: list[dict]) -> dict:
-        reviewed = [t for t in subset if t.get("human_reviewed")]
+        reviewed = [t for t in subset if t.get("reviewed")]
         if not reviewed:
             return {"reviewed": 0, "corrected": None, "error_rate": None, "ci95": None}
         corrected = sum(1 for t in reviewed if t.get("review_corrected"))
@@ -88,7 +88,7 @@ def label_error_rate(tickets: list[dict]) -> dict:
     return {
         "random_block": measure([t for t in tickets if in_block(t)]),
         "targeted_picks": measure(
-            [t for t in tickets if t.get("human_reviewed") and not in_block(t)]
+            [t for t in tickets if t.get("reviewed") and not in_block(t)]
         ),
         "note": (
             "Only random_block estimates the label error rate of the set. The targeted "

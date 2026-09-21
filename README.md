@@ -87,8 +87,9 @@ prompt.
 
 Intent on Bitext tickets comes from a deterministic mapping of the upstream label. Urgency
 and escalation — and intent on the authored hard cases — were **drafted by a model** and
-are marked as such on every ticket. Nothing here is hand-labelled until a person has
-reviewed it; `human_reviewed` and `label_provenance` record exactly which is which.
+are marked as such on every ticket. **No label here has been checked by a person.** Some
+have been through a second-opinion review by a model of a different family from the
+drafter; `reviewed`, `reviewed_by` and `label_provenance` record exactly which is which.
 
 This is a real limitation, not a formality: the baseline is scored against labels drafted
 by the same model family, so absolute accuracy is optimistic. `make review` exports a
@@ -104,44 +105,51 @@ kind, because an average over both hides the only interesting part.
 
 ## Baseline results
 
-`baseline_v1` on `gpt-5.6-terra` at `effort=high`, run 2026-09-21. Full records in
-`results/`; `results/latest_dev.json` is the bar later versions must beat.
+`baseline_v1` on `gpt-5.6-terra` at `effort=high`, run 2026-09-21, scored against labels
+as corrected by the second-opinion review. Full records in `results/`;
+`results/latest_dev.json` is the bar later versions must beat.
 
-> **These are self-agreement figures, not accuracy.** The same model drafted the urgency
-> and escalation labels it is scored against here, and **no ticket has been reviewed by a
-> human yet**. A model agreeing with its own earlier judgement is not evidence the
-> judgement was right. Intent is the partial exception: for the 216 Bitext tickets it
-> comes from a deterministic mapping, not from the model. Read the escalation and urgency
-> numbers as a fixed bar for later versions, not as a measure of how good the triage is.
+> **These are still largely self-agreement figures.** The same model drafted the urgency
+> and escalation labels it is scored against, and **no label has been checked by a
+> person** — 55 of 252 tickets have been through a second-opinion review by
+> `claude-opus-5`, a different model family, which corrected 11. Intent is the partial
+> exception: for the 216 Bitext tickets it comes from a deterministic mapping. Read these
+> as a fixed bar for later versions, not as a measure of how good the triage is.
 
 | Metric | Dev (144) | Test (108) |
 |---|---:|---:|
-| Intent accuracy | 94.4% | 96.3% |
-| Urgency accuracy | 93.1% | 90.7% |
-| Escalation accuracy | 99.3% | 97.2% |
-| All three correct | 88.2% | 87.0% |
-| Escalations in the labels | 17 | 12 |
-| Missed escalations | 1 | 1 |
-| Unnecessary escalations | 0 | 2 |
+| Intent accuracy | 93.8% | 97.2% |
+| Urgency accuracy | 91.7% | 91.7% |
+| Urgency macro recall | 77.7% | 82.4% |
+| — always predict `low` | 69.4% acc / 33.3% macro | 70.4% acc / 33.3% macro |
+| Escalation accuracy | 98.6% | 98.2% |
+| All three correct | 86.8% | 89.8% |
+| Escalations in the labels | 14 | 11 |
+| Missed escalations | 0 | 0 |
+| Unnecessary escalations | 2 | 2 |
 | Cost per ticket | $0.00112 | $0.00116 |
 | Latency p50 / p95 | 2.1s / 2.8s | 2.1s / 3.1s |
 
-The 17 and 12 reconcile with the 29 escalations in the label summary: the splits
-partition the set, so gold escalations sum across them exactly (17 + 12 = 29), as do
-tickets (144 + 108 = 252). `make test` now asserts this rather than leaving it to be
-checked by eye.
+Two failure modes came out of the review, both systematic:
 
-Dev and test agree to within a couple of points on every metric, which is what you would
-expect from one prompt applied to two halves of one stratified sample. It says the split
-is sound; it says nothing about whether the labels are right.
+- **Every unnecessary escalation is a spurious `out_of_scope`** — four across both splits,
+  all ordinary support questions whose vocabulary the model did not recognise ("freemium
+  accounts", "withdrawal fees", "customer claim"). The drafter made the same mistake, so
+  two of these were hidden as *correct* escalations until the review moved the label.
+- **`high` urgency recall is 50% on dev, 67% on test.** All six misses are pre-dispatch
+  order changes or cancellations, called `normal` with 0.84–0.99 confidence. That is
+  exactly the client's stated pain: urgent tickets sitting behind routine ones.
 
-The escalation numbers are the ones to distrust most. Precision 1.00 and recall 0.94 on
-dev is not a credible measure of a first attempt — it mostly measures the same model
-applying the same rules the same way twice. The single missed escalation is instructive:
-on `hl-0224` (*"need to switch to the fucking premium account help me"*) the labeller
-called `severe_customer_anger` and the baseline did not. The brief says mild swearing
-about the situation is **not** severe anger, so the baseline looks right and the label
-looks wrong. That ticket is in the review sample.
+The 14 and 11 reconcile with the 25 escalations now in the label set: the splits
+partition it, so gold escalations sum across them exactly, as do tickets (144 + 108 =
+252). `make test` asserts this rather than leaving it to be checked by eye.
+
+The review moved the numbers very little — at most 2.8 points on any metric, down on dev
+and up on test — but it changed what they mean. Escalation recall went to 1.00 on both
+splits because both "missed escalations" turned out to be label errors, not model errors.
+In exchange, precision fell on dev from 1.00 to 0.875 as two spurious escalations stopped
+being hidden behind matching wrong labels. The headline barely moved; the error profile
+moved a lot.
 
 ## Label quality
 

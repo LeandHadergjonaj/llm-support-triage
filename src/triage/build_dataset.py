@@ -317,7 +317,7 @@ def assemble(labelled: list[dict], model: str, effort: str, smoke: bool) -> list
                 },
                 "labeler": {"model": model, "effort": effort},
                 "smoke_test": smoke,
-                "human_reviewed": False,
+                "reviewed": False,
                 "review_note": None,
                 "bitext_intent": row["bitext_intent"],
                 "bitext_flags": row["bitext_flags"],

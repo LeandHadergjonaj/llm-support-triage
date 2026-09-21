@@ -1,7 +1,9 @@
 """Drafts urgency and escalation labels for the evaluation set.
 
-These labels are MODEL-DRAFTED, not hand-labelled. Every ticket records that in
-`label_provenance`, and `human_reviewed` stays false until a person has corrected it.
+These labels are MODEL-DRAFTED. Every ticket records that in `label_provenance`.
+`reviewed` stays false until the ticket has been through the second-opinion review pass,
+which is run by a model of a different family -- not by a person. No label in this
+project is hand-labelled at any point.
 
 The drafter is deliberately not the baseline: it sees the whole client brief, is asked
 to reason about one ticket at a time, and is asked to flag its own uncertainty. It is

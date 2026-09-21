@@ -1,8 +1,14 @@
-"""Fold hand corrections from the review CSV back into the eval set.
+"""Fold the review pass's corrections from the CSV back into the eval set.
 
-Every row present in the CSV is marked `human_reviewed: true`, whether or not it was
-changed -- a reviewer confirming a label is as much a review as a reviewer fixing one.
-Corrected labels have their provenance flipped from `model_drafted` to `human_reviewed`.
+The review is a SECOND OPINION BY A DIFFERENT MODEL FAMILY, not a human pass. The labels
+were drafted by an OpenAI model and reviewed by Claude. That independence is the whole
+value of it, and also its limit: two models disagreeing tells you a label is contested,
+not which one a person would pick. Nothing this writes may be described as hand-labelled
+or human-reviewed.
+
+Every row present in the CSV is marked `reviewed: true`, whether or not it was changed --
+confirming a label is as much a review as fixing one. Corrected labels have their
+provenance flipped from `model_drafted` to `second_opinion`.
 """
 
 from __future__ import annotations
@@ -21,6 +27,10 @@ SOURCE = REPO_ROOT / "data" / "review" / "label_review_sample.csv"
 SMOKE_EVAL = REPO_ROOT / "data" / "smoke"
 SMOKE_SOURCE = SMOKE_EVAL / "label_review_sample.csv"
 
+# The reviewing model. Deliberately a different family from the drafter (an OpenAI
+# model), because a model checking its own work is the thing this pass exists to escape.
+DEFAULT_REVIEWER = "claude-opus-5 (Anthropic)"
+
 
 def _parse_bool(value: str) -> bool:
     lowered = value.strip().lower()
@@ -38,7 +48,16 @@ def main() -> int:
         action="store_true",
         help="Apply the review sample in data/smoke/ instead of the eval set.",
     )
+    parser.add_argument(
+        "--reviewer",
+        default=DEFAULT_REVIEWER,
+        help=(
+            "Who performed the review, recorded per ticket. This is a model, not a "
+            "person: the value must never imply a human pass."
+        ),
+    )
     args = parser.parse_args()
+    reviewer = args.reviewer
 
     eval_dir, source = (SMOKE_EVAL, SMOKE_SOURCE) if args.smoke else (EVAL, SOURCE)
     if not source.exists():
@@ -57,7 +76,8 @@ def main() -> int:
             row = corrections.get(ticket["id"])
             if row is None:
                 continue
-            ticket["human_reviewed"] = True
+            ticket["reviewed"] = True
+            ticket["reviewed_by"] = reviewer
             ticket["review_note"] = row.get("reviewer_note") or None
             # Why this ticket was in the sample, carried onto the ticket so the error
             # rate can be reported for the random block separately from the targeted
@@ -72,17 +92,17 @@ def main() -> int:
                 if value not in INTENTS:
                     raise SystemExit(f"{ticket['id']}: unknown intent {value!r}")
                 ticket["labels"]["intent"] = value
-                ticket["label_provenance"]["intent"] = "human_reviewed"
+                ticket["label_provenance"]["intent"] = "second_opinion"
                 touched = True
             if (value := row["CORRECTED_urgency"].strip()):
                 if value not in URGENCIES:
                     raise SystemExit(f"{ticket['id']}: unknown urgency {value!r}")
                 ticket["labels"]["urgency"] = value
-                ticket["label_provenance"]["urgency"] = "human_reviewed"
+                ticket["label_provenance"]["urgency"] = "second_opinion"
                 touched = True
             if (value := row["CORRECTED_escalate"].strip()):
                 ticket["labels"]["escalate"] = _parse_bool(value)
-                ticket["label_provenance"]["escalate"] = "human_reviewed"
+                ticket["label_provenance"]["escalate"] = "second_opinion"
                 touched = True
             if (value := row["CORRECTED_escalation_reasons"].strip()):
                 reasons = sorted({r.strip() for r in value.split("|") if r.strip()})
@@ -90,7 +110,7 @@ def main() -> int:
                 if unknown:
                     raise SystemExit(f"{ticket['id']}: unknown escalation reasons {unknown}")
                 ticket["labels"]["escalation_reasons"] = reasons
-                ticket["label_provenance"]["escalate"] = "human_reviewed"
+                ticket["label_provenance"]["escalate"] = "second_opinion"
                 touched = True
             if not ticket["labels"]["escalate"]:
                 ticket["labels"]["escalation_reasons"] = []

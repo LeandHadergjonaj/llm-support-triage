@@ -16,15 +16,15 @@ escalating risky or uncertain ones to a human review queue.
 
 ## Where we are
 
-**Step 1b complete: eval set built, baseline scored on dev and test, review sample
-exported. Awaiting the human label-review pass.**
+**Phase 1 complete.** 252 tickets (216 Bitext, 36 authored hard cases), labels drafted by
+`gpt-5.6-terra`, split 144 dev / 108 test. 55 tickets reviewed by `claude-opus-5` as a
+second opinion, 11 corrected. Baseline re-scored against the corrected labels from saved
+predictions; that is the baseline of record.
 
-252 tickets (216 Bitext, 36 authored hard cases), labels drafted by `gpt-5.6-terra`,
-split 144 dev / 108 test. Baseline `baseline_v1` scored on both. Nothing is
-human-reviewed yet, so every number is self-agreement — see `README.md`.
-
-Next: correct `data/review/label_review_sample.csv`, run `make import-review`, re-run
-`make eval`, and treat *that* as the baseline of record.
+Recommended before Phase 2, and not yet done: sweep the remaining 197 tickets for the two
+error patterns the review found (see `DECISIONS.md` D-008 and D-009). Two contradictory
+`out_of_scope` escalations and roughly nine mis-urgencied order changes are already
+identifiable by rule.
 
 **Step 1 complete: evaluation set and single-prompt baseline.**
 
@@ -39,9 +39,13 @@ each will be measured against the baseline recorded in `results/`.
    disagree, the brief wins and the code is the bug — `tests/` asserts they agree.
 2. **The test split is held out.** Tune on `data/eval/dev.jsonl` only. `make eval` runs
    dev; scoring test is a separate command and prints a warning.
-3. **Labels are model-drafted until a human says otherwise.** Never describe the eval set
-   as hand-labelled. `label_provenance` and `human_reviewed` are per-ticket and must stay
-   accurate.
+3. **No label in this project has been checked by a person, and none may be described as
+   if it had.** Labels are model-drafted; some have since been through a second-opinion
+   review by a model of a *different family* from the drafter (`gpt-5.6-terra` drafted,
+   `claude-opus-5` reviewed). That is an independence check, not verification. Never write
+   "hand-labelled", "human-reviewed" or "verified". `label_provenance`, `reviewed` and
+   `reviewed_by` are per-ticket and must stay accurate; `tests/` asserts the banned
+   phrasings never appear in the data.
 4. **Do not overstate results.** The baseline is scored against labels drafted by **the
    same model at the same effort**, not merely the same family. A model agreeing with its
    own judgement is not evidence that the judgement is right, so absolute accuracy is
@@ -60,6 +64,13 @@ each will be measured against the baseline recorded in `results/`.
    command that calls the API takes `--max-cost` (default $2.00) and stops rather than
    spend past it. Running spend is appended to `results/spend_log.jsonl`; `make spend`
    prints the total. Projected cost goes in the plan before the money goes out.
+9. **Claude owns the decisions on this project, and logs them.** Every meaningful decision
+   goes in `DECISIONS.md`, dated and newest-first, with the reasoning and — where the
+   brief was silent — the rule that should have been there. A decision a later reader
+   could reasonably have made differently belongs in the log; routine implementation
+   choices do not. Go back to the client only for what only they can supply: spend above
+   the $2 cap, keys or account access, or a change to what the project is for. Everything
+   else: decide, do it, write it down.
 
 ## Stack
 
@@ -86,7 +97,9 @@ make test       checks that need no API key
 
 ## Current results
 
-Dev: intent 94.4%, urgency 93.1%, escalation 99.3%, all three 88.2%.
-Test: intent 96.3%, urgency 90.7%, escalation 97.2%, all three 87.0%.
-$0.61 spent building and scoring. Full table and the caveats that matter in `README.md`.
-Pre-review; the labels are the model's own, so these are a bar, not a measure.
+Post-review baseline of record (`results/latest_{dev,test}.json`):
+Dev: intent 93.8%, urgency 91.7% (macro recall 77.7%), escalation 98.6%, all three 86.8%.
+Test: intent 97.2%, urgency 91.7% (macro recall 82.4%), escalation 98.2%, all three 89.8%.
+Escalation recall 1.00 on both splits; 4 spurious `out_of_scope` escalations remain.
+Label error rate on the random review block: 16.7% (95% CI 7.3–33.6%, Wilson).
+$0.61 spent in total; the review and re-score cost nothing. Full table in `README.md`.

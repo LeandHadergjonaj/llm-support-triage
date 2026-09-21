@@ -11,6 +11,191 @@ differently — not every implementation choice.
 
 ## 2026-09-21
 
+### D-024 — Phase 3b: the system answers tickets. Dev converges to a clean pass; test surfaces two real, left-alone findings
+
+**Design: the simplest thing that could work, per the brief.** `src/triage/answerer.py` is
+one LLM call per ticket, on `gpt-5.6-terra` (rule 7 / the Phase 3b brief). The whole
+knowledge base (~5k tokens, six documents) goes straight into the system prompt -- no
+retrieval. Retrieval solves a cost/precision problem at a scale this project does not have;
+adding it now would be a new failure mode (fetching the wrong section) traded for a
+non-existent saving. **Order facts never come from the model reading the ticket**:
+`extract_order_ids` pulls order numbers out of the ticket text with a regex (the same
+deterministic step a real system would take before an orders-API call), looks them up in
+`data/orders/orders.jsonl`, and that verified block is the *only* source of order facts the
+model is given -- the prompt tells it to say "no record found" rather than invent one, and
+`tests/test_answerer.py` pins this with no API key needed. The router (`router.py`,
+Phase 2, unchanged) decides `self` vs `human` first; `answerer.py` then writes a customer
+reply (`self`) or a handover note for the person picking it up (`human`) -- never a
+customer-facing reply on an escalated ticket, per brief v3 §5 ("the system does not send a
+reply"). Ground rule 3 in the prompt also bars the system from ever claiming to have
+already cancelled, changed or refunded anything, since brief v3 §6 makes those human
+actions in every version of this system; the model may describe what will happen, not
+declare it done.
+
+**Two structural additions, both earned by a specific dev failure, nothing else added:**
+
+1. Two dev tickets missed facts about the £100 review threshold and the free-of-charge
+   pre-dispatch process even though the knowledge base states both -- the model resolved
+   the customer's literal question and stopped, without volunteering policy the customer
+   didn't know to ask about. Added two explicit ground rules (7, 8: always say a
+   pre-dispatch change is fee-free; always say whether a refund figure needs senior review).
+   Dev's `required_fact_coverage` moved from 74.4% (29/39) to 92.7% (38/41) on this change
+   alone -- the denominator itself moved too, because the fix also flipped `hl-0033`'s
+   routing to the correct one that run, giving it a content grade it hadn't had before.
+2. Human-routed handover notes never stated *why* the ticket was escalated or its urgency,
+   even though the router had already computed both (`escalation_reasons`) -- because the
+   answerer was never given them. Passed `router_pred["escalation_reasons"]` through to the
+   handover-note prompt and required the note to open with the escalation and state urgency
+   explicitly, so a calm safety report is not written up as routine and an angry-but-routine
+   complaint is not written up as urgent. This was the fix that took dev's
+   `fully_correct_of_graded` from 63.2% to 85%.
+
+Nothing else was added: no specialist sub-agents, no extra pipeline stage, no per-category
+branching beyond the one route split the router already provides.
+
+**A third, larger gain came from an eval-authoring fix, not a system change** -- see
+D-023 below, found by inspecting *why* two of the same dev tickets kept failing after the
+two prompt fixes above. `hl-0242` and `hl-0033` both had a required-fact item phrased as
+the *absence* of bad content, which cannot be satisfied by any answer's text no matter how
+good. Fixing that (D-023) took dev's `required_fact_coverage` to 100% and
+`fully_correct_of_graded` to 100% on 19/20 correctly-routed tickets. This was done, and
+logged, **before test was touched at all.**
+
+**Final dev (n=20), before test was run or the eval touched again:**
+
+| Metric | Rate | n | 95% CI |
+|---|---:|---:|---|
+| Routing accuracy | 95.0% | 20 | 76.4–99.1% |
+| Required fact coverage | 100% | 38 | 90.8–100% |
+| Forbidden-content avoidance | 100% | 34 | 89.9–100% |
+| Fully correct (of routed-correctly) | 100% | 19 | 83.2–100% |
+
+**Final test (n=16), run once, nothing changed after:**
+
+| Metric | Rate | n | 95% CI |
+|---|---:|---:|---|
+| Routing accuracy | 93.75% | 16 | 71.7–98.9% |
+| Required fact coverage | 83.87% | 31 | 67.4–92.9% |
+| Forbidden-content avoidance | 100% | 25 | 86.7–100% |
+| Fully correct (of routed-correctly) | 80.0% | 15 | 54.8–93.0% |
+
+Test is lower, and the two splits' 95% CIs overlap heavily at n=16-20 -- this is not
+evidence the system is worse on test, it is what a coin-flip's worth of sampling noise
+looks like at this n, exactly the point rule 4 and every prior CI in this project's
+`results/` already makes. Two specific things behind the test gap, found by reading the
+failures rather than trusting the aggregate:
+
+- **`hl-a0012` (must_handle=self) was routed to a human**, and I now think the *ground
+  truth is wrong, not the router*. The ticket states "£150" for an item the order record
+  later shows is actually a £95 pendant light, not a desk lamp. The router never sees the
+  order record -- it only sees ticket text -- so escalating on a stated £150 is exactly
+  what brief v3 §5 says to do ("where a figure is stated, use it"). I set `must_handle:
+  self` in Phase 3a on the assumption grounding would happen before routing; the actual,
+  brief-consistent design routes first and grounds only what it then answers or hands over.
+  **Left uncorrected on this run** -- the rule is test changes nothing once it has been run,
+  and this is exactly why: however confident the diagnosis, correcting it now would be
+  indistinguishable from tuning to what test just showed. It goes in the next review pass.
+- **`hl-0236`'s three required facts about actioning an address change and a marketing
+  opt-out were marked unmet**, and reading the judge's own notes, one of the three
+  (the refund-status fact) actually *was* stated correctly -- the judge penalised omitting
+  the year ("9 September" vs "2026-09-09") from a criterion I had written with a literal
+  ISO date in it, which no one writes to a customer. That is a second instance of the same
+  authoring-defect class as D-023 (`hl-0011`'s "not a specific refund date" is a third,
+  found the same way) -- a criterion phrased so no correct answer could satisfy it
+  literally. **Also left uncorrected on this run**, same reason: found only after test was
+  scored, so it goes in the next review pass, not into a same-session rescoring. The other
+  two of `hl-0236`'s three facts are a genuine, if debatable, design tension: ground rule 3
+  (never claim to have performed an account action) directly conflicts with an expectation
+  that the address/unsubscribe be "actioned" -- brief v3 §6 only names *order* and *money*
+  actions as human-only, so this ground rule may be broader than the brief requires. Also
+  left alone; see "next step" below.
+
+**Reading test's headline number honestly:** at least 2 of test's 5 missed required facts
+(across `hl-0236` and `hl-0011`) are now known to be criterion defects rather than answer
+defects. Recomputed by hand *for this write-up only, not for the recorded score*:
+excluding those two items would put required fact coverage at 28/29 = 96.6%, much closer to
+dev. The recorded 83.87% stands as the number of record, exactly because "it would score
+higher if I fixed the eval" is precisely the reasoning rule 4 and this phase's own brief
+warn against acting on immediately after seeing test.
+
+**The judge check.** I (Claude Sonnet 5, a different model family from the judge,
+`gpt-5.6-terra`) blind-graded every one of dev's 19 correctly-routed answers against their
+criteria before looking at the judge's saved verdicts, and separately fed the judge four
+answers I deliberately broke (wrong-document figure, boundary misapplied, an invented
+refund+date+return-by-parcel, a bogus fee) to see if it would catch them. **Agreement was
+100% across all 88 individual pass/fail judgements** (72 from the real dev answers, 16 from
+the four adversarial cases) -- the judge caught every injected defect and matched my own
+read on every real answer. This establishes the judge reliably catches *clear-cut*
+violations, matching or missing content in the way a human grader reading the same
+checklist would. It does **not** establish the judge is reliable on subtler, more literal
+calls: the two test-time findings above (`hl-0236`'s year, `hl-0011`'s double-negative
+criterion) are exactly the judge being *too* literal about criterion wording rather than
+too lenient about content -- so the 100% figure describes the judge's ability to catch bad
+answers, not its tolerance for badly-worded criteria, and should not be read as "the judge
+is reliable" without that qualifier. Combined with D-022's caveat (same-vendor grading is
+not independent verification), the honest summary is: this judge is trustworthy for
+routing correctness (exact match, no judgement involved) and for catching answers that
+invent facts or omit required policy -- it is not yet trustworthy enough to read its
+literal per-fact score to two decimal places without checking the failures by hand, which
+is what this write-up did.
+
+**Cost and latency**, three LLM calls per ticket (router, answer, judge), all
+`gpt-5.6-terra`: dev $0.1082 total / $0.001834 per ticket, mean latency 2.97s; test $0.1265
+/ $0.002692 per ticket, mean latency 2.87s (test's higher per-ticket cost is a smaller,
+less cache-friendly run, not a more expensive design). Two smoke checks and a judge
+stress-test before the real runs cost $0.0602 combined, logged honestly to
+`results/spend_log.jsonl` even though they were not formal eval runs. **Phase total:
+$0.2949.** Project-to-date: $2.3860 (`make spend`) -- every individual run stayed
+comfortably under the $2 cap; the cumulative figure is not itself capped.
+
+**Not done, on purpose:** Phase 4 (the human review queue) was explicitly out of scope
+and nothing here builds toward it beyond the `human` handover notes the router already
+required. **Natural next step:** a small review pass to fix the three now-identified
+criterion defects (the two named above plus a sweep for the same double-negative pattern
+class-wide, D-023's method) and a decision on ground rule 3's scope (does "no account
+action claimed" match brief v3 §6, or is it broader than the brief needs) -- both cheap,
+both would tighten test's number without touching the system.
+
+### D-023 — Four answer-eval criteria fixed for backwards phrasing, found while running Phase 3b, before scoring
+
+Running the first real answerer against `data/eval/answers_dev.jsonl` surfaced four
+criteria in the Phase 3a set that were logically backwards, not merely strict: an
+`expected_must_contain` item that described the *absence* of bad behaviour ("not to
+attempt a fix or refund itself", `hl-0242`; "not to make any new representation about the
+case", `hl-0190`) and an `expected_must_not_contain` item that described the *absence* of
+good content ("silence on the 14-day / restocking-fee question…", `hl-0033`; "silence on
+any of the three asks", `hl-0236`). A `must_contain` item has to be checkable as something
+a good answer states; "not to do X" is not a thing text can be checked for containing, and
+the same logic in reverse breaks a `must_not_contain` item. These would have scored a
+*correct* answer as wrong no matter how it was phrased, on both criteria being tested
+simultaneously (`hl-0242`, `hl-0033` were the exact two tickets the first dev run failed
+this way).
+
+**This is not "the system disagreed with the label"** — the Phase 3b brief's line against
+that is about defensible policy calls, not about a criterion that cannot be satisfied by
+any correctly-behaving answer. Fixed by moving each to the list it belongs in, restated as
+positive content:
+
+| Ticket | Was (wrong list) | Now |
+|---|---|---|
+| `hl-0242` | contain: "not to attempt a fix or refund itself" | not_contain: "an offered repair, replacement or fix decided by the system itself" |
+| `hl-0190` | contain: "not to make any new representation about the case" | removed -- already covered by the existing not_contain item "a new offer, apology admitting fault, or refund figure" |
+| `hl-0033` | not_contain: "silence on the 14-day / restocking-fee question…" | contain: "notes that the large-furniture return rules (14-day window, 15% restocking fee) apply to this two-person-delivery item" -- softened from the original's implicit ask that the system compute the window had *already expired*, which needs a "today's date" the order record does not carry; stating the rule applies is the fair, checkable version |
+| `hl-0236` | not_contain: "silence on any of the three asks" | removed -- already covered by the three separate positive `must_contain` items for each ask |
+
+`tests/test_taxonomy_and_metrics.py::test_answer_eval_set_is_well_formed_and_grounded`
+still passes (every ticket keeps at least one `expected_must_contain` fact). Dev was
+re-scored after this fix, before test was run at all -- test had not yet been touched, so
+this is not a case of tuning the eval to a test-split result either.
+
+**Not exhaustive.** Running the real test split afterward (D-024) found a third instance of
+the same backwards-phrasing bug (`hl-0011`'s "not a specific refund date") and a related but
+distinct defect -- a criterion written with a literal machine-format date no natural reply
+would reproduce (`hl-0236`). Both are named in D-024 and deliberately left uncorrected on
+that run, because they surfaced after test had already been scored; this audit should have
+been a full pass over both splits rather than the four caught by one keyword grep, and the
+next review pass should finish it.
+
 ### D-022 — Stop chasing triage accuracy; Phase 3a builds the client's knowledge and the answer eval, not an answering system
 
 **Not pursuing further triage-accuracy work on this eval set.** D-021 found no

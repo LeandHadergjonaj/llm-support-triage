@@ -64,10 +64,30 @@ an LLM (`gpt-5.6-terra` by default) and that is **not independent verification**
 same reason a same-family label review isn't (D-011) — see D-022 and the module's own
 docstring. Cost: $0, no API calls were needed to build this step.
 
-Deliberately *not* built yet: anything that answers a ticket, retrieval over the policy
-docs, the review queue UI, deployment. Each of those is a later step and each will be
-measured against the baseline recorded in `results/` — **at the same brief version** — and
-the answer eval above, once something exists to run it against.
+**Phase 3b complete: the system now answers tickets.** `src/triage/answerer.py` — one LLM
+call per ticket, the whole knowledge base in the prompt (no retrieval, not needed at this
+size), order facts only from a deterministic regex-then-database lookup, never from the
+model reading the ticket. The router (Phase 2, unchanged) decides `self` vs `human` first;
+the answerer writes a customer reply or a handover note accordingly, and never claims to
+have performed an order/account/refund action itself. **Dev, final: routing 95.0% (19/20),
+required-fact coverage 100% (38/38), forbidden-content avoidance 100% (34/34), fully
+correct 100% (19/19).** **Test, run once, unmodified after: routing 93.75% (15/16),
+required-fact coverage 83.87% (26/31), forbidden-content avoidance 100% (25/25), fully
+correct 80.0% (12/15).** Two structural additions, both earned by a specific dev failure
+(state the £100 threshold and the pre-dispatch fee-free rule unprompted; pass the router's
+own escalation reason into the handover note); one eval-authoring bug class found and fixed
+before test (`hl-0242`/`hl-0033`, D-023) and two more instances of it found *after* test and
+deliberately left uncorrected (`hl-0011`, `hl-0236`, D-024) — test's number is a genuine
+underestimate by a known amount, stated rather than fixed. Judge check: Claude Sonnet 5
+blind-graded every dev answer plus four deliberately broken ones — 100% agreement on 88
+judgements, which says the judge catches clear-cut violations reliably, not that it is
+tolerant of badly-worded criteria (it isn't — that's what the two post-test findings show).
+Phase cost $0.2949; project-to-date $2.3860 (`make spend`). See `DECISIONS.md` D-024.
+
+Deliberately *not* built yet: the human review queue UI and deployment (Phase 4). Each is
+a later step and each will be measured against the baseline recorded in `results/` — **at
+the same brief version** — and the answer eval, now that something exists to run it
+against (`results/latest_answerer_{dev,test}.json`).
 
 ## The rules this project runs on
 
@@ -154,7 +174,9 @@ make eval-router-test  score the router on the held-out test split
 make review     export the round-1 label sample for correction
 make review-round2  draw a fresh random block from the never-reviewed remainder
 make sweep      show which labels the current brief's rules would change (dry run)
-make eval-answers ANSWERS=path.jsonl       score candidate answers against the DEV answer eval
+make answer      run the full router+answerer+judge pipeline on dev and score it
+make answer-test run the full pipeline on the held-out test split
+make eval-answers ANSWERS=path.jsonl       score a candidates.jsonl against the DEV answer eval
 make eval-answers-test ANSWERS=path.jsonl  score against the HELD-OUT TEST answer eval
 make spend      print total API spend recorded so far
 make test       checks that need no API key

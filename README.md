@@ -1,18 +1,24 @@
 # LLM support triage — Hearth & Loom
 
 Routing customer support tickets for a fictional online homewares retailer: what is this
-ticket about, how urgent is it, and does a human need to handle it.
+ticket about, how urgent is it, does a human need to handle it, and — as of step 3b — what
+should the reply say.
 
-This repository is at **step 3a of a staged build**. Step 1 was an evaluation set and a
+This repository is at **step 3b of a staged build**. Step 1 was an evaluation set and a
 deliberately simple baseline — one LLM call per ticket. Step 2 settled the one open policy
 question the baseline could not answer on its own (`DECISIONS.md` D-018/D-020) and added a
 router: a prompt fix, a deterministic policy layer, and a confidence gate. It did **not**
 beat the baseline outside noise (McNemar p=0.73 dev, p=1.0 test), and with errors down to
 single digits this eval set can no longer tell triage designs apart — see `DECISIONS.md`
-D-022. Step 3a stops chasing triage accuracy and builds the next measuring stick instead: a
+D-022. Step 3a stopped chasing triage accuracy and built the next measuring stick instead: a
 knowledge base (`docs/knowledge_base/`), a mock orders database (`data/orders/`), and an
-answer eval (`data/eval/answers_{dev,test}.jsonl`) for the answering system a later step
-will build. There is still no retrieval, no answerer agent and no UI, on purpose.
+answer eval (`data/eval/answers_{dev,test}.jsonl`). Step 3b builds the thing that eval
+measures: `src/triage/answerer.py`, one LLM call per ticket, no retrieval, order facts only
+from a deterministic database lookup, never from the model's own reading. Dev converges to
+100% required-fact coverage and forbidden-content avoidance on the tickets it routes
+correctly; test (run once, unmodified after) sits lower, and `DECISIONS.md` D-024 explains
+exactly why rather than smoothing it over. There is still no review-queue UI and no
+deployment, on purpose.
 
 ## Quick start
 
@@ -80,6 +86,8 @@ run replaces these projections with measurements.
 | `data/orders/` | A 30-order mock database, mostly tied to specific tickets rather than generic filler |
 | `data/eval/answers_{dev,test}.jsonl` | The answer eval: 36 tickets with `must_handle` + grounding contracts instead of triage labels |
 | `src/triage/eval_answers.py` | Scores a candidate-answers file against the answer eval; states its own judge bias |
+| `src/triage/answerer.py` | Writes the customer reply or human handover note; KB in the prompt, order facts from a DB lookup only |
+| `src/triage/evaluate_answerer.py` | Runs router + answerer + judge over a split end to end and scores it |
 | `data/README.md` | Licence position, provenance, and every transformation applied |
 | `tests/` | Checks that run without an API key |
 
@@ -333,6 +341,81 @@ same vendor and potentially the same model a future answering system would run o
 is the same shape of bias `DECISIONS.md` D-011 names for the label review. `tests/test_eval_answers.py`
 exercises the aggregation logic with a stubbed judge, so the scorer's own correctness
 does not depend on the API. No API spend was needed to build this step.
+
+## Phase 3b: the system answers tickets
+
+`src/triage/answerer.py` — one LLM call per ticket, `gpt-5.6-terra`. The router (Phase 2,
+unchanged) decides `self` vs `human` first; the answerer writes the customer reply or the
+handover note. The whole knowledge base goes in the prompt (~5k tokens, well under
+anything that needs retrieval); order facts come only from a regex-extracted order number
+looked up in `data/orders/orders.jsonl` — never from the model reading the ticket — and the
+prompt requires saying "no record found" rather than guessing. The system never claims to
+have already cancelled, changed or refunded anything, per brief v3 §6.
+
+**Results** (`results/latest_answerer_{dev,test}.json`):
+
+| Metric | Dev (n=20) | Test (n=16, run once) |
+|---|---:|---:|
+| Routing accuracy | 95.0% [76.4–99.1%] | 93.75% [71.7–98.9%] |
+| Required fact coverage | 100% (38/38) [90.8–100%] | 83.87% (26/31) [67.4–92.9%] |
+| Forbidden-content avoidance | 100% (34/34) [89.9–100%] | 100% (25/25) [86.7–100%] |
+| Fully correct, of routed correctly | 100% (19/19) [83.2–100%] | 80.0% (12/15) [54.8–93.0%] |
+
+Cost: $0.001834/ticket dev, $0.002692/ticket test (three calls per ticket — router, answer,
+judge), mean latency ~2.9s. Phase total $0.2949; project-to-date $2.3860.
+
+**The traps, specifically:**
+
+| Trap | Ticket(s) | Result |
+|---|---|---|
+| Refund-timing inconsistency (5 vs 10 working days) | `hl-a0003` | Resolved correctly — cites 5 working days, the authoritative document |
+| Nonexistent order (53004) | `hl-a0004` | Correctly reported as not found, asked for confirmation, nothing invented |
+| £100 boundary, exactly £100 | `hl-a0001` | Correctly not escalated / no senior review stated |
+| £100 boundary, £100.01 | `hl-a0002` | Correctly escalated |
+| £100 boundary, two items summing over | `hl-0011` | Correctly escalated and grounded (one required fact mis-scored — see below) |
+| £100 boundary, two items summing under | `hl-a0013` | Correctly not escalated |
+
+**Test is lower than dev, and `DECISIONS.md` D-024 explains why rather than rounding it
+up.** One routing "miss" (`hl-a0012`) is very likely a Phase 3a labelling mistake, not a
+system error — the ticket states a £150 refund the router (which never sees order records)
+correctly escalates on per brief v3 §5, even though the order record later shows the real
+item is £95. Two required-fact "misses" (`hl-0011`, `hl-0236`) are eval-criterion defects
+found only after test was scored — one criterion literally demanded the *absence* of
+content (impossible to satisfy), the other demanded a machine-format date no natural reply
+would include. **All three are left uncorrected on this run, on purpose**, exactly because
+finding them after seeing test is not licence to fix them before reporting the number.
+Recomputed by hand only for this paragraph: excluding the two known-bad criteria puts
+required fact coverage at 28/29 = 96.6%, much closer to dev — the recorded 83.87% is the
+number that stands.
+
+**The judge check.** Claude Sonnet 5 (a different model family from the judge) blind-graded
+all 19 correctly-routed dev answers before looking at the judge's verdicts, and separately
+gave the judge four deliberately broken answers (wrong-document figure, a boundary
+misapplied, an invented refund+date+return-by-parcel, a bogus fee). **100% agreement across
+88 individual judgements.** This says the judge reliably catches clear-cut violations — it
+does not say the judge is a careful reader of ambiguous criteria, which the two post-test
+findings above show it is not. Treat `required_fact_coverage` as trustworthy for "did the
+answer get the substance right," and treat any single-digit gap from 100% as needing a
+human look at *why*, not as a precise defect count.
+
+**One strong answer** (`hl-a0003`, resolving the planted inconsistency): *"Once approved,
+refunds are returned to the original payment method within 5 working days. No refund
+amount is being discussed here, so no senior-review threshold applies."* Grounded, correct
+document, nothing invented.
+
+**One weak answer** (`hl-0236`, the three-ask ticket): the reply correctly stated the
+refund's approval date and status, but neither actioned nor clearly promised the address
+change or the marketing opt-out, instead explaining how the customer or support *could* do
+them — a direct consequence of the ground rule against claiming account actions were
+performed, which may be broader than brief v3 §6 actually requires. A real design tension,
+not a bug, and named as the next thing to resolve.
+
+**Natural next step:** fix the three now-identified eval-criterion defects and the same
+double-negative pattern class-wide (a proper sweep, not the one-keyword grep that caught
+four of six); decide whether ground rule 3 should allow the system to action a saved
+address or marketing preference, given brief v3 §6 only names *order* and *money* actions
+as human-only. Phase 4 (the review queue) was explicitly out of scope for this step and
+nothing here was built toward it.
 
 ## Status
 

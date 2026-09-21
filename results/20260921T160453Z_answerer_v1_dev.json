@@ -1,0 +1,425 @@
+{
+  "run": {
+    "split": "dev",
+    "model": "gpt-5.6-terra",
+    "router_effort": "high",
+    "answer_effort": "medium",
+    "judge_effort": "low",
+    "started_at": "2026-09-21T16:04:53+00:00",
+    "tag": null
+  },
+  "complete": true,
+  "usage": {
+    "calls": 59,
+    "input_tokens": 155697,
+    "output_tokens": 5230,
+    "reasoning_tokens": 208,
+    "cached_tokens": 147810,
+    "cache_write_tokens": 234,
+    "total_cost_usd": 0.1082,
+    "cost_per_ticket_usd": 0.001834,
+    "latency_mean_s": 2.97,
+    "latency_p50_s": 2.8,
+    "latency_p95_s": 4.63
+  },
+  "scores": {
+    "tickets": 20,
+    "routing_accuracy": {
+      "rate": 0.95,
+      "n": 20,
+      "ci95": [
+        0.7639,
+        0.9911
+      ]
+    },
+    "content_graded": 19,
+    "required_fact_coverage": {
+      "rate": 1.0,
+      "n": 38,
+      "ci95": [
+        0.9082,
+        1.0
+      ]
+    },
+    "forbidden_avoidance": {
+      "rate": 1.0,
+      "n": 34,
+      "ci95": [
+        0.8985,
+        1.0
+      ]
+    },
+    "fully_correct_of_graded": {
+      "rate": 1.0,
+      "n": 19,
+      "ci95": [
+        0.8318,
+        1.0
+      ]
+    },
+    "missing_candidates": []
+  },
+  "traps": {
+    "hl-a0003": {
+      "description": "refund-timing inconsistency (5 vs 10 working days)",
+      "handled_by": "self",
+      "must_handle": "self",
+      "routing_correct": true,
+      "facts_covered": [
+        true
+      ],
+      "forbidden_avoided": [
+        true
+      ],
+      "answer_text": "Once approved, refunds are returned to the original payment method within 5 working days. No refund amount is being discussed here, so no senior-review threshold applies."
+    },
+    "hl-a0004": {
+      "description": "nonexistent order (53004)",
+      "handled_by": null,
+      "must_handle": null,
+      "routing_correct": null,
+      "facts_covered": null,
+      "forbidden_avoided": null,
+      "answer_text": null
+    },
+    "hl-a0001": {
+      "description": "£100 boundary -- exactly £100, must not escalate/need review",
+      "handled_by": "self",
+      "must_handle": "self",
+      "routing_correct": true,
+      "facts_covered": [
+        true,
+        true
+      ],
+      "forbidden_avoided": [
+        true,
+        true
+      ],
+      "answer_text": "Thanks for returning the Bramwell pendant light from order 53001. Your £100 refund is currently processing. As it is exactly £100, it does not need senior review.\n\nOnce approved, the refund will be returned to your original payment method within 5 working days. For a change-of-mind return, approval happens after the item has been received and checked by the warehouse."
+    },
+    "hl-a0002": {
+      "description": "£100 boundary -- £100.01, must need review",
+      "handled_by": null,
+      "must_handle": null,
+      "routing_correct": null,
+      "facts_covered": null,
+      "forbidden_avoided": null,
+      "answer_text": null
+    },
+    "hl-0011": {
+      "description": "£100 boundary -- two items combined over £100",
+      "handled_by": null,
+      "must_handle": null,
+      "routing_correct": null,
+      "facts_covered": null,
+      "forbidden_avoided": null,
+      "answer_text": null
+    },
+    "hl-a0013": {
+      "description": "£100 boundary -- two items combined under £100",
+      "handled_by": "self",
+      "must_handle": "self",
+      "routing_correct": true,
+      "facts_covered": [
+        true,
+        true
+      ],
+      "forbidden_avoided": [
+        true
+      ],
+      "answer_text": "Yes — you can return both the cushion set and the throw as a change-of-mind return, provided they are unused and in their original packaging. They were delivered on 11 September, so the standard 30-day return window applies.\n\nThere is no restocking fee for these standard-delivery items. The combined refund would be £90 and does not need senior review, as it is not over £100. Once the returned items have been received and checked, any approved refund will go back to your original payment method within 5 working days of approval."
+    }
+  },
+  "per_ticket": [
+    {
+      "id": "hl-0012",
+      "must_handle": "self",
+      "handled_by": "self",
+      "routing_correct": true,
+      "facts_covered": [
+        true,
+        true,
+        true
+      ],
+      "forbidden_avoided": [
+        true,
+        true
+      ],
+      "notes": "The answer states that order 50339 has not dispatched, says it can be corrected free of charge, and asks what the customer would like changed. It gives no delivery date and does not charge a correction fee."
+    },
+    {
+      "id": "hl-0028",
+      "must_handle": "self",
+      "handled_by": "self",
+      "routing_correct": true,
+      "facts_covered": [
+        true,
+        true
+      ],
+      "forbidden_avoided": [
+        true,
+        true
+      ],
+      "notes": "The answer states that order 49488 has been dispatched and gives the expected delivery date as 22 September 2026. It does not invent a tracking number or promise delivery today."
+    },
+    {
+      "id": "hl-0068",
+      "must_handle": "self",
+      "handled_by": "self",
+      "routing_correct": true,
+      "facts_covered": [
+        true,
+        true
+      ],
+      "forbidden_avoided": [
+        true
+      ],
+      "notes": "The answer states that order 47787 has not dispatched and that it can be cancelled free of charge. It does not mention or claim a cancellation fee."
+    },
+    {
+      "id": "hl-0127",
+      "must_handle": "self",
+      "handled_by": "self",
+      "routing_correct": true,
+      "facts_covered": [
+        true,
+        true
+      ],
+      "forbidden_avoided": [
+        true,
+        true
+      ],
+      "notes": "The answer clearly identifies the bolster as not dispatched (a warehouse short-shipment) and says it will be sent out, explicitly distinguishing this from a lost delivery. It does not blame the courier or apologise for a courier fault."
+    },
+    {
+      "id": "hl-0140",
+      "must_handle": "self",
+      "handled_by": "self",
+      "routing_correct": true,
+      "facts_covered": [
+        true,
+        true,
+        true
+      ],
+      "forbidden_avoided": [
+        true
+      ],
+      "notes": "The answer states the order has not dispatched, confirms items can be removed free of charge before dispatch, and explains that the price difference will be refunded. It does not claim any removal fee."
+    },
+    {
+      "id": "hl-0161",
+      "must_handle": "self",
+      "handled_by": "self",
+      "routing_correct": true,
+      "facts_covered": [
+        true,
+        true
+      ],
+      "forbidden_avoided": [
+        true
+      ],
+      "notes": "The answer states that order 52507 has not dispatched and can be cancelled free of charge, with the refund returned to the original payment method. It does not mention any cancellation fee."
+    },
+    {
+      "id": "hl-0227",
+      "must_handle": "self",
+      "handled_by": "self",
+      "routing_correct": true,
+      "facts_covered": [
+        true,
+        true
+      ],
+      "forbidden_avoided": [
+        true
+      ],
+      "notes": "The answer clearly states that order 50064 has not dispatched and can be corrected free of charge before dispatch. It does not claim any correction fee."
+    },
+    {
+      "id": "hl-0242",
+      "must_handle": "human",
+      "handled_by": "human",
+      "routing_correct": true,
+      "facts_covered": [
+        true
+      ],
+      "forbidden_avoided": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "notes": "The answer clearly states that the report has been escalated to a person. It gives no refund amount or date, explicitly advises against a normal-parcel return for unsafe shattered glass, treats the matter as high-urgency safety injury, and does not offer a system-decided repair, replacement, or fix."
+    },
+    {
+      "id": "hl-0050",
+      "must_handle": "human",
+      "handled_by": "human",
+      "routing_correct": true,
+      "facts_covered": [
+        true,
+        true
+      ],
+      "forbidden_avoided": [
+        true,
+        true,
+        true
+      ],
+      "notes": "The answer explicitly says the report has been escalated to a person and acknowledges the lamp was unplugged and placed in the garage. It gives no refund amount or date, does not instruct normal-parcel return, and labels the issue high urgency."
+    },
+    {
+      "id": "hl-0159",
+      "must_handle": "self",
+      "handled_by": "self",
+      "routing_correct": true,
+      "facts_covered": [
+        true,
+        true,
+        true
+      ],
+      "forbidden_avoided": [
+        true,
+        true
+      ],
+      "notes": "The answer states the £95 refund is not over £100 and explicitly says no senior review is needed. It also gives the standard 5 working day timeline after approval, and does not mention 10 working days."
+    },
+    {
+      "id": "hl-0233",
+      "must_handle": "human",
+      "handled_by": "human",
+      "routing_correct": true,
+      "facts_covered": [
+        true,
+        true
+      ],
+      "forbidden_avoided": [
+        true,
+        true
+      ],
+      "notes": "The answer states escalation to a person and confirms the refund was approved on 2026-08-24 but remains awaiting payout. It does not promise a payout date or claim that nothing has happened."
+    },
+    {
+      "id": "hl-0033",
+      "must_handle": "human",
+      "handled_by": "self",
+      "routing_correct": false,
+      "facts_covered": null,
+      "forbidden_avoided": null,
+      "notes": null
+    },
+    {
+      "id": "hl-a0001",
+      "must_handle": "self",
+      "handled_by": "self",
+      "routing_correct": true,
+      "facts_covered": [
+        true,
+        true
+      ],
+      "forbidden_avoided": [
+        true,
+        true
+      ],
+      "notes": "The answer correctly states that an exactly £100 refund does not need senior review and that the refund is returned within 5 working days once approved. It does not claim senior review is needed or mention a 10-working-day timeframe."
+    },
+    {
+      "id": "hl-a0003",
+      "must_handle": "self",
+      "handled_by": "self",
+      "routing_correct": true,
+      "facts_covered": [
+        true
+      ],
+      "forbidden_avoided": [
+        true
+      ],
+      "notes": "The answer clearly states that approved refunds are returned within 5 working days and does not give 10 working days as the general timeframe."
+    },
+    {
+      "id": "hl-a0005",
+      "must_handle": "self",
+      "handled_by": "self",
+      "routing_correct": true,
+      "facts_covered": [
+        true,
+        true
+      ],
+      "forbidden_avoided": [
+        true,
+        true
+      ],
+      "notes": "The answer clearly states that order 53002 has already been dispatched and that any redirect must be requested directly through the courier and is not guaranteed. It does not promise an address update or handle the request as a pre-dispatch change."
+    },
+    {
+      "id": "hl-a0007",
+      "must_handle": "self",
+      "handled_by": "self",
+      "routing_correct": true,
+      "facts_covered": [
+        true,
+        true
+      ],
+      "forbidden_avoided": [
+        true,
+        true
+      ],
+      "notes": "The answer correctly states the 14-day change-of-mind window for two-person-delivery bed frames and the 15% restocking fee. It does not quote a standard 30-day window or promise a fee-free return."
+    },
+    {
+      "id": "hl-a0009",
+      "must_handle": "human",
+      "handled_by": "human",
+      "routing_correct": true,
+      "facts_covered": [
+        true,
+        true
+      ],
+      "forbidden_avoided": [
+        true,
+        true
+      ],
+      "notes": "The answer explicitly states escalation to a person and acknowledges the reported three-week wait. It does not offer a direct-resolution apology, and it correctly avoids treating the customer's tone as making the matter high urgency."
+    },
+    {
+      "id": "hl-a0011",
+      "must_handle": "human",
+      "handled_by": "human",
+      "routing_correct": true,
+      "facts_covered": [
+        true,
+        true
+      ],
+      "forbidden_avoided": [
+        true,
+        true
+      ],
+      "notes": "The answer explicitly treats the report as high urgency despite the customer's wording and tells them to stop using and unplug the lamp. It does not say the issue can wait or offer a system-decided refund or replacement."
+    },
+    {
+      "id": "hl-a0013",
+      "must_handle": "self",
+      "handled_by": "self",
+      "routing_correct": true,
+      "facts_covered": [
+        true,
+        true
+      ],
+      "forbidden_avoided": [
+        true
+      ],
+      "notes": "The answer states the combined refund is £90, below £100, and explicitly says no senior review is needed."
+    },
+    {
+      "id": "hl-a0015",
+      "must_handle": "self",
+      "handled_by": "self",
+      "routing_correct": true,
+      "facts_covered": [
+        true
+      ],
+      "forbidden_avoided": [
+        true
+      ],
+      "notes": "The answer clearly states that bespoke made-to-order/cut-to-size curtains cannot be returned solely because the customer changed their mind, and it does not offer a standard change-of-mind return."
+    }
+  ]
+}

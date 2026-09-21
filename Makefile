@@ -1,4 +1,4 @@
-.PHONY: setup data labels review baseline eval eval-test clean
+.PHONY: setup data review eval eval-test test clean
 
 PY := .venv/bin/python
 
@@ -20,3 +20,6 @@ eval-test:                 ## Score the baseline on the HELD-OUT TEST split. Do 
 
 clean:
 	rm -rf results/*.json results/*.md
+
+test:                      ## Run the checks that need no API key
+	$(PY) -m pytest tests/ -q

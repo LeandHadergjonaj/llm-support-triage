@@ -459,3 +459,163 @@ def test_rescore_does_not_log_spend(tmp_path, monkeypatch):
     # A rescore path must not call record_spend at all; the total stays put.
     assert llm.total_spend() == after_real
     assert ledger.read_text().count("\n") == 1
+
+
+# --- The brief is versioned, and the sweep applies it ----------------------
+
+
+def test_brief_declares_a_version_and_a_changelog():
+    """A score is only interpretable next to the brief version that produced it."""
+    from triage.taxonomy import brief_version
+
+    version = brief_version()
+    assert version.startswith("v")
+    brief = BRIEF_PATH.read_text()
+    assert "## 7. Changelog" in brief
+    assert f"### {version} " in brief, f"the changelog has no entry for {version}"
+
+
+def test_baseline_prompt_carries_the_v2_clarifications():
+    """The baseline must not be marked against policy it was never given.
+
+    Each assertion is one brief v2 change. They are checked on the prompt rather than
+    trusted to a code review, because the whole justification for re-running the
+    baseline at v2 is that the prompt states the same rules the labels were made under.
+    """
+    prompt = system_prompt().lower()
+    assert "before dispatch" in prompt  # change 4: the pre-dispatch window
+    assert "adding items is the exception" in prompt  # change 4: the carve-out
+    assert "not the vocabulary" in prompt  # change 3: unfamiliar names
+    assert "can no longer pay" in prompt  # change 2
+    assert "cannot be undone" in prompt  # change 1: multi-ask tie-break
+    assert "`product_safety` always implies `high`" in prompt  # change 5
+
+
+def test_sweep_rules_do_what_the_brief_says():
+    from triage.sweep import out_of_scope_contradiction, pre_dispatch_window
+
+    def ticket(**kw):
+        base = {
+            "id": "hl-0001",
+            "text": "cancel order 51986",
+            "bitext_intent": "cancel_order",
+            "labels": {
+                "intent": "order_management",
+                "urgency": "normal",
+                "escalate": False,
+                "escalation_reasons": [],
+            },
+        }
+        base["labels"].update(kw.pop("labels", {}))
+        return base | kw
+
+    # Change 4: a cancellation on a live order is high...
+    assert pre_dispatch_window(ticket())[0] == {"urgency": "high"}
+    # ...but an addition is the exception...
+    assert pre_dispatch_window(ticket(text="how do I add items to order 52020?")) is None
+    # ...and an ask that presupposes no live order is untouched.
+    assert pre_dispatch_window(ticket(text="how do I update my address")) is None
+    assert pre_dispatch_window(ticket(bitext_intent="place_order")) is None
+    assert pre_dispatch_window(ticket(labels={"urgency": "high"})) is None
+
+    # Change 3: the out_of_scope reason needs the matching intent.
+    contradictory = ticket(
+        labels={"escalate": True, "escalation_reasons": ["out_of_scope"]},
+        bitext_intent="check_invoice",
+    )
+    assert out_of_scope_contradiction(contradictory)[0] == {
+        "escalate": False,
+        "escalation_reasons": [],
+    }
+    genuine = ticket(
+        labels={
+            "intent": "out_of_scope",
+            "escalate": True,
+            "escalation_reasons": ["out_of_scope"],
+        }
+    )
+    assert out_of_scope_contradiction(genuine) is None
+    # Another reason alongside it survives; only the contradictory one is dropped.
+    both = ticket(
+        labels={"escalate": True, "escalation_reasons": ["out_of_scope", "product_safety"]}
+    )
+    assert out_of_scope_contradiction(both)[0] == {
+        "escalate": True,
+        "escalation_reasons": ["product_safety"],
+    }
+
+
+# --- Review rounds sample different populations and must not be pooled -----
+
+
+def _round_ticket(ticket_id, round_no, corrected):
+    return {
+        "id": ticket_id,
+        "reviewed": True,
+        "review_corrected": corrected,
+        "review_selection": {"reason": "r", "in_random_block": True, "round": round_no},
+    }
+
+
+def test_review_rounds_are_reported_separately_and_never_pooled():
+    """Round 1 sampled the whole set before correction; round 2 the unchecked
+    remainder afterwards. Pooling them would report a rate for a set that no longer
+    exists, and averaging them would be worse."""
+    tickets = (
+        [_round_ticket(f"a{i}", 1, i < 6) for i in range(30)]
+        + [_round_ticket(f"b{i}", 2, i < 1) for i in range(30)]
+    )
+    rates = label_error_rate(tickets)
+    assert rates["by_round"]["1"]["error_rate"] == 0.2
+    assert rates["by_round"]["2"]["error_rate"] == round(1 / 30, 4)
+    # The headline is the latest round alone, not the 7/60 pooled rate.
+    assert rates["random_block_round"] == 2
+    assert rates["random_block"]["reviewed"] == 30
+    assert rates["random_block"]["corrected"] == 1
+
+
+def test_a_block_with_no_round_recorded_counts_as_round_one():
+    """Tickets written before rounds existed must not silently form a round of their own."""
+    rates = label_error_rate([_reviewed("a", True, True), _reviewed("b", True, False)])
+    assert rates["random_block_round"] == 1
+    assert rates["by_round"]["1"]["reviewed"] == 2
+
+
+@pytest.mark.skipif(
+    not (REPO / "data" / "eval" / "dev.jsonl").exists(), reason="eval set not built yet"
+)
+def test_the_sweep_never_claims_to_have_checked_a_ticket():
+    """The sweep applies a rule without re-reading anything. Counting a swept ticket as
+    reviewed would report 13 tickets as checked when none of them were."""
+    swept = [
+        json.loads(line)
+        for split in ("dev", "test")
+        for line in (REPO / "data" / "eval" / f"{split}.jsonl").read_text().splitlines()
+        if line.strip() and json.loads(line).get("sweep")
+    ]
+    assert swept, "no swept tickets to check"
+    for ticket in swept:
+        # A swept ticket may also have been reviewed, but only by a review round that
+        # put it in a CSV -- never by the sweep itself.
+        if ticket["reviewed"]:
+            assert ticket["review_selection"], ticket["id"]
+        assert ticket["sweep"]["by"] and not ticket["sweep"].get("is_a_human_pass")
+        for field, value in ticket["sweep"]["was"].items():
+            assert ticket["labels"][field] != value or field == "escalation_reasons"
+
+
+@pytest.mark.skipif(
+    not (REPO / "data" / "eval" / "dev.jsonl").exists(), reason="eval set not built yet"
+)
+def test_the_label_set_obeys_the_v2_rules_it_was_swept_for():
+    """The brief is the source of truth; these are the two rules it gained at v2."""
+    for split in ("dev", "test"):
+        for line in (REPO / "data" / "eval" / f"{split}.jsonl").read_text().splitlines():
+            if not line.strip():
+                continue
+            t = json.loads(line)
+            labels = t["labels"]
+            if "out_of_scope" in labels["escalation_reasons"]:
+                assert labels["intent"] == "out_of_scope", t["id"]
+            if "product_safety" in labels["escalation_reasons"]:
+                assert labels["urgency"] == "high", t["id"]

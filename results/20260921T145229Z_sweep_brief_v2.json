@@ -1,0 +1,220 @@
+{
+  "at": "2026-09-21T14:52:29+00:00",
+  "brief_version": "v2",
+  "by": "claude-opus-5 (Anthropic)",
+  "is_a_human_pass": false,
+  "what_this_is": "A mechanical application of two rules from brief v2 to every ticket they match. It is a consistency mechanism, not a check: it finds only the errors its rules describe, and a swept ticket is not `reviewed`.",
+  "rules": {
+    "out_of_scope_contradiction": "v2 change 3 (D-008)",
+    "pre_dispatch_window": "v2 change 4 (D-009)"
+  },
+  "counts": {
+    "pre_dispatch_window": 11,
+    "out_of_scope_contradiction": 2
+  },
+  "changes": [
+    {
+      "id": "hl-0012",
+      "pattern": "pre_dispatch_window",
+      "brief_change": "v2 change 4 (D-009)",
+      "was": {
+        "urgency": "low"
+      },
+      "now": {
+        "urgency": "high"
+      },
+      "note": "Upstream intent `change_order`: a change to a live order that has to take effect before dispatch, which brief v2 §4 makes `high`. Not an addition, and the ticket names an order.",
+      "text": "correct order 50339",
+      "previously_reviewed": false,
+      "split": "dev"
+    },
+    {
+      "id": "hl-0018",
+      "pattern": "out_of_scope_contradiction",
+      "brief_change": "v2 change 3 (D-008)",
+      "was": {
+        "escalate": true,
+        "escalation_reasons": [
+          "out_of_scope"
+        ]
+      },
+      "now": {
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "note": "Escalated `out_of_scope` while the intent is `billing_and_payment`; brief v2 §5 makes the reason available only when the intent is `out_of_scope` too. Intent kept, escalation reason dropped.",
+      "text": "what do i need to do to get my bills from Callum Reid",
+      "previously_reviewed": false,
+      "split": "dev"
+    },
+    {
+      "id": "hl-0031",
+      "pattern": "pre_dispatch_window",
+      "brief_change": "v2 change 4 (D-009)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "high"
+      },
+      "note": "Upstream intent `cancel_order`: a change to a live order that has to take effect before dispatch, which brief v2 §4 makes `high`. Not an addition, and the ticket names an order.",
+      "text": "i need help with cancelling order 51986",
+      "previously_reviewed": false,
+      "split": "dev"
+    },
+    {
+      "id": "hl-0097",
+      "pattern": "pre_dispatch_window",
+      "brief_change": "v2 change 4 (D-009)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "high"
+      },
+      "note": "Upstream intent `cancel_order`: a change to a live order that has to take effect before dispatch, which brief v2 §4 makes `high`. Not an addition, and the ticket names an order.",
+      "text": "I can no longer pay for order 52315",
+      "previously_reviewed": true,
+      "split": "dev"
+    },
+    {
+      "id": "hl-0112",
+      "pattern": "out_of_scope_contradiction",
+      "brief_change": "v2 change 3 (D-008)",
+      "was": {
+        "escalate": true,
+        "escalation_reasons": [
+          "out_of_scope"
+        ]
+      },
+      "now": {
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "note": "Escalated `out_of_scope` while the intent is `feedback_and_complaint`; brief v2 §5 makes the reason available only when the intent is `out_of_scope` too. Intent kept, escalation reason dropped.",
+      "text": "help to file a consumer complaint",
+      "previously_reviewed": false,
+      "split": "dev"
+    },
+    {
+      "id": "hl-0117",
+      "pattern": "pre_dispatch_window",
+      "brief_change": "v2 change 4 (D-009)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "high"
+      },
+      "note": "Upstream intent `change_order`: a change to a live order that has to take effect before dispatch, which brief v2 §4 makes `high`. Not an addition, and the ticket names an order.",
+      "text": "can I swap something of order 50292?",
+      "previously_reviewed": false,
+      "split": "dev"
+    },
+    {
+      "id": "hl-0122",
+      "pattern": "pre_dispatch_window",
+      "brief_change": "v2 change 4 (D-009)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "high"
+      },
+      "note": "Upstream intent `cancel_order`: a change to a live order that has to take effect before dispatch, which brief v2 §4 makes `high`. Not an addition, and the ticket names an order.",
+      "text": "is it possible to cancel purchase 49933?",
+      "previously_reviewed": false,
+      "split": "dev"
+    },
+    {
+      "id": "hl-0161",
+      "pattern": "pre_dispatch_window",
+      "brief_change": "v2 change 4 (D-009)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "high"
+      },
+      "note": "Upstream intent `cancel_order`: a change to a live order that has to take effect before dispatch, which brief v2 §4 makes `high`. Not an addition, and the ticket names an order.",
+      "text": "cancelling order 52507",
+      "previously_reviewed": false,
+      "split": "dev"
+    },
+    {
+      "id": "hl-0207",
+      "pattern": "pre_dispatch_window",
+      "brief_change": "v2 change 4 (D-009)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "high"
+      },
+      "note": "Upstream intent `change_order`: a change to a live order that has to take effect before dispatch, which brief v2 §4 makes `high`. Not an addition, and the ticket names an order.",
+      "text": "modify purchase 51096",
+      "previously_reviewed": false,
+      "split": "dev"
+    },
+    {
+      "id": "hl-0074",
+      "pattern": "pre_dispatch_window",
+      "brief_change": "v2 change 4 (D-009)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "high"
+      },
+      "note": "Upstream intent `change_order`: a change to a live order that has to take effect before dispatch, which brief v2 §4 makes `high`. Not an addition, and the ticket names an order.",
+      "text": "can you help me changing a product of a purchase?",
+      "previously_reviewed": false,
+      "split": "test"
+    },
+    {
+      "id": "hl-0077",
+      "pattern": "pre_dispatch_window",
+      "brief_change": "v2 change 4 (D-009)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "high"
+      },
+      "note": "Upstream intent `change_order`: a change to a live order that has to take effect before dispatch, which brief v2 §4 makes `high`. Not an addition, and the ticket names an order.",
+      "text": "I want to remove some articles from order 46399",
+      "previously_reviewed": false,
+      "split": "test"
+    },
+    {
+      "id": "hl-0123",
+      "pattern": "pre_dispatch_window",
+      "brief_change": "v2 change 4 (D-009)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "high"
+      },
+      "note": "Upstream intent `cancel_order`: a change to a live order that has to take effect before dispatch, which brief v2 §4 makes `high`. Not an addition, and the ticket names an order.",
+      "text": "i want assistance to cancel order 50521",
+      "previously_reviewed": false,
+      "split": "test"
+    },
+    {
+      "id": "hl-0144",
+      "pattern": "pre_dispatch_window",
+      "brief_change": "v2 change 4 (D-009)",
+      "was": {
+        "urgency": "normal"
+      },
+      "now": {
+        "urgency": "high"
+      },
+      "note": "Upstream intent `cancel_order`: a change to a live order that has to take effect before dispatch, which brief v2 §4 makes `high`. Not an addition, and the ticket names an order.",
+      "text": "I no longerr want purchase 51880",
+      "previously_reviewed": false,
+      "split": "test"
+    }
+  ]
+}

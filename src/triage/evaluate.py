@@ -32,6 +32,7 @@ from triage.llm import (
 )
 from triage.metrics import label_error_rate, score_escalation, score_slices
 from triage.schema import Prediction, Ticket, prediction_json_schema
+from triage.taxonomy import brief_version
 
 EVAL_DIR = REPO_ROOT / "data" / "eval"
 RESULTS = REPO_ROOT / "results"
@@ -232,6 +233,7 @@ def _label_error_lines(record: dict) -> list[str]:
     if not rates:
         return []
     block, targeted = rates["random_block"], rates["targeted_picks"]
+    rounds = rates.get("by_round") or {}
     if not block["reviewed"]:
         return [
             "## Label error rate",
@@ -244,42 +246,49 @@ def _label_error_lines(record: dict) -> list[str]:
             "",
         ]
     low, high = block["ci95"]
+    latest = rates.get("random_block_round")
     lines = [
         "## Label error rate",
         "",
         (
-            f"Measured on the **random block** -- {block['reviewed']} tickets drawn "
-            f"uniformly from all {record['escalation_reconciliation']['eval_set']['tickets']}, "
-            f"which is the only part of the review sample that estimates the set as a "
-            f"whole."
+            "Measured on a **random block** -- tickets drawn uniformly from a defined "
+            "population, which is the only part of a review sample that estimates "
+            "anything. Rounds sample different populations at different times and are "
+            "**never pooled or averaged**; the current estimate is the latest round."
         ),
         "",
-        "| | Corrected | Reviewed | Error rate | 95% CI |",
-        "|---|---:|---:|---:|---:|",
-        (
-            f"| Random block | {block['corrected']} | {block['reviewed']} | "
-            f"{block['error_rate']:.1%} | [{low:.1%}, {high:.1%}] |"
-        ),
+        "| | Corrected | Reviewed | Error rate | 95% CI | Population sampled |",
+        "|---|---:|---:|---:|---:|---|",
     ]
+    for name, rnd in sorted(rounds.items()):
+        r_low, r_high = rnd["ci95"]
+        mark = " **(current)**" if latest is not None and int(name) == latest else ""
+        lines.append(
+            f"| Round {name} block{mark} | {rnd['corrected']} | {rnd['reviewed']} | "
+            f"{rnd['error_rate']:.1%} | [{r_low:.1%}, {r_high:.1%}] | {rnd['population']} |"
+        )
     if targeted["reviewed"]:
         t_low, t_high = targeted["ci95"]
         lines.append(
             f"| Targeted picks | {targeted['corrected']} | {targeted['reviewed']} | "
-            f"{targeted['error_rate']:.1%} | [{t_low:.1%}, {t_high:.1%}] |"
+            f"{targeted['error_rate']:.1%} | [{t_low:.1%}, {t_high:.1%}] | "
+            f"chosen for looking wrong -- not a population |"
         )
     lines += [
         "",
         (
             "Wilson score interval. The targeted picks were chosen for looking wrong, "
             "so their rate is biased upwards by construction -- a diagnostic of where "
-            "the drafter struggles, not an estimate of the set. Do not average the two "
-            "rows."
+            "the drafter struggles, not an estimate of the set. Do not average any of "
+            "these rows."
         ),
         "",
         (
-            f"Read the accuracy figures above against this: roughly "
+            f"Read the accuracy figures above against this: on the latest block roughly "
             f"{block['error_rate']:.0%} of reference labels are wrong (95% CI "
-            f"{low:.0%}-{high:.0%}), which bounds how precisely any of them can be known."
+            f"{low:.0%}-{high:.0%}), which bounds how precisely any of them can be known. "
+            f"That block was reviewed by the same model that wrote the correction rules "
+            f"it is checking, so it is not an independent measurement of their success."
         ),
         "",
     ]
@@ -373,7 +382,10 @@ def markdown_summary(record: dict) -> str:
         f"# Baseline results -- {meta['split']} split",
         "",
         *([SMOKE_BANNER, ""] if smoke else []),
-        f"- Prompt: `{meta['prompt_version']}`",
+        (
+            f"- Prompt: `{meta['prompt_version']}` against client brief "
+            f"`{meta.get('brief_version', 'unrecorded')}`"
+        ),
         f"- Model: `{meta['model']}` (effort `{meta['effort']}`)",
         f"- Run at: {meta['started_at']}",
         f"- Tickets: {n}",
@@ -588,6 +600,11 @@ def main() -> int:
             "effort": effort,
             "workers": workers,
             "rescored_from": Path(args.rescore).name if args.rescore else None,
+            # Which version of the client brief the prompt and the labels were produced
+            # under. A score is only interpretable next to it: brief v2 made labels wrong
+            # that v1 allowed, so a v1 run and a v2 run are not comparable as evidence of
+            # improvement, only as two separate bars.
+            "brief_version": brief_version(),
             "started_at": started.isoformat(timespec="seconds"),
             "tag": args.tag,
         },

@@ -6,6 +6,24 @@ file is the bug.
 
 from __future__ import annotations
 
+from pathlib import Path
+
+BRIEF_PATH = Path(__file__).resolve().parents[2] / "docs" / "client-brief.md"
+
+
+def brief_version() -> str:
+    """The version the brief declares, e.g. "v2".
+
+    Recorded on every run and on every drafted label. The brief is the source of truth
+    for what a label means, so a result is only interpretable next to the version of the
+    brief it was produced under: v2 made two labels wrong that v1 allowed.
+    """
+    for line in BRIEF_PATH.read_text().splitlines():
+        if line.startswith("**Version:"):
+            return line.split("**Version:", 1)[1].split("**", 1)[0].strip()
+    raise RuntimeError(f"{BRIEF_PATH} declares no version; add a '**Version: vN**' line.")
+
+
 # --- Intent categories ------------------------------------------------------
 
 INTENTS: dict[str, str] = {
@@ -37,7 +55,8 @@ INTENTS: dict[str, str] = {
     "marketing_preferences": "Newsletter and marketing email subscribe / unsubscribe.",
     "out_of_scope": (
         "Not a Hearth & Loom support request: spam, sales pitches, job applications, wrong "
-        "company, questions outside the support team's remit."
+        "company, questions outside the support team's remit. An unfamiliar product, tier "
+        "or fee name is not grounds for this: judge the request, not the vocabulary."
     ),
 }
 
@@ -46,7 +65,9 @@ INTENTS: dict[str, str] = {
 URGENCIES: dict[str, str] = {
     "high": (
         "Waiting causes harm that cannot be undone later: physical safety, an account being "
-        "actively misused, money moving irreversibly, or a time-boxed window about to close."
+        "actively misused, money moving irreversibly, or a time-boxed window about to "
+        "close -- most often a change to a live order that has to take effect before "
+        "dispatch."
     ),
     "normal": (
         "The customer is blocked on something they are owed or have paid for, but a day's "
@@ -84,7 +105,8 @@ ESCALATION_REASONS: dict[str, str] = {
         "that they are done with the company. Ordinary frustration is not this."
     ),
     "out_of_scope": (
-        "Not a Hearth & Loom support request, or outside the support team's remit."
+        "Not a Hearth & Loom support request, or outside the support team's remit. "
+        "Available only when the ticket's intent is also `out_of_scope`."
     ),
 }
 

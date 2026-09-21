@@ -18,14 +18,13 @@ import csv
 import json
 import sys
 
+from triage.export_review import round_dest
 from triage.llm import REPO_ROOT
 from triage.metrics import label_error_rate
 from triage.taxonomy import ESCALATION_REASONS, INTENTS, URGENCIES
 
 EVAL = REPO_ROOT / "data" / "eval"
-SOURCE = REPO_ROOT / "data" / "review" / "label_review_sample.csv"
 SMOKE_EVAL = REPO_ROOT / "data" / "smoke"
-SMOKE_SOURCE = SMOKE_EVAL / "label_review_sample.csv"
 
 # The reviewing model. Deliberately a different family from the drafter (an OpenAI
 # model), because a model checking its own work is the thing this pass exists to escape.
@@ -49,6 +48,14 @@ def main() -> int:
         help="Apply the review sample in data/smoke/ instead of the eval set.",
     )
     parser.add_argument(
+        "--round",
+        type=int,
+        default=1,
+        dest="round_no",
+        metavar="N",
+        help="Which review round's CSV to apply. Recorded per ticket; rounds are never pooled.",
+    )
+    parser.add_argument(
         "--reviewer",
         default=DEFAULT_REVIEWER,
         help=(
@@ -59,7 +66,8 @@ def main() -> int:
     args = parser.parse_args()
     reviewer = args.reviewer
 
-    eval_dir, source = (SMOKE_EVAL, SMOKE_SOURCE) if args.smoke else (EVAL, SOURCE)
+    eval_dir = SMOKE_EVAL if args.smoke else EVAL
+    source = round_dest(args.round_no, args.smoke)
     if not source.exists():
         raise SystemExit(f"{source} not found. Run: make review")
 
@@ -85,6 +93,7 @@ def main() -> int:
             ticket["review_selection"] = {
                 "reason": row.get("why_selected") or "unknown",
                 "in_random_block": row.get("in_random_block", "false") == "true",
+                "round": args.round_no,
             }
             touched = False
 
@@ -132,14 +141,16 @@ def main() -> int:
         if line.strip()
     ]
     rates = label_error_rate(reviewed)
-    block = rates["random_block"]
-    if block["reviewed"]:
+    for name, block in sorted(rates["by_round"].items()):
         low, high = block["ci95"]
         print(
-            f"\nLabel error rate on the random block: {block['corrected']}/"
-            f"{block['reviewed']} = {block['error_rate']:.1%}, "
+            f"\nRound {name} random block ({block['population']}): "
+            f"{block['corrected']}/{block['reviewed']} = {block['error_rate']:.1%}, "
             f"95% CI [{low:.1%}, {high:.1%}] (Wilson)."
         )
+    print("Rounds sample different populations and are never pooled.")
+    block = rates["random_block"]
+    if block["reviewed"]:
         targeted = rates["targeted_picks"]
         if targeted["reviewed"]:
             print(

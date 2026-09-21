@@ -24,7 +24,8 @@ from pathlib import Path
 from triage.llm import REPO_ROOT
 
 EVAL = REPO_ROOT / "data" / "eval"
-DEST = REPO_ROOT / "data" / "review" / "label_review_sample.csv"
+REVIEW_DIR = REPO_ROOT / "data" / "review"
+DEST = REVIEW_DIR / "label_review_sample.csv"
 SMOKE_EVAL = REPO_ROOT / "data" / "smoke"
 SMOKE_DEST = SMOKE_EVAL / "label_review_sample.csv"
 
@@ -45,6 +46,38 @@ COLUMNS = [
     "CORRECTED_escalation_reasons",
     "reviewer_note",
 ]
+
+
+def round_dest(round_no: int, smoke: bool) -> Path:
+    """Where round N's CSV lives. Round 1 keeps its original filename."""
+    base = SMOKE_EVAL if smoke else REVIEW_DIR
+    if round_no == 1:
+        return SMOKE_DEST if smoke else DEST
+    return base / f"label_review_round{round_no}.csv"
+
+
+def fresh_block(rows: list[dict], n: int, seed: int) -> list[tuple[dict, str, bool]]:
+    """A later round's random block: a uniform draw over the NOT-YET-REVIEWED tickets.
+
+    Round 1's block was drawn over all 252 and its tickets have since been corrected, so
+    re-drawing over the whole set would measure a mixture of a checked stratum and an
+    unchecked one -- and would mostly measure me agreeing with myself on the tickets I
+    already read. Drawing from the unreviewed remainder instead gives a clean estimate of
+    one well-defined population: the part of the label set nobody has looked at.
+
+    Tickets the rule sweep touched are deliberately left in the pool. The sweep applied a
+    rule without re-reading anything, so it is not a check, and a block that excluded its
+    tickets could not catch it being wrong.
+    """
+    pool = [r for r in rows if not r.get("reviewed")]
+    if n > len(pool):
+        raise SystemExit(f"Asked for {n} but only {len(pool)} tickets are unreviewed.")
+    shuffled = list(pool)
+    random.Random(seed).shuffle(shuffled)
+    return sorted(
+        ((row, RANDOM_CONTROL, True) for row in shuffled[:n]),
+        key=lambda triple: triple[0]["id"],
+    )
 
 
 def load_all(eval_dir: Path) -> list[dict]:
@@ -179,21 +212,39 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--round",
+        type=int,
+        default=1,
+        dest="round_no",
+        metavar="N",
+        help=(
+            "Which review round this is. Round 1 is the original mixed sample and is "
+            "pinned so re-exporting never drops a row. Round 2 and later draw a fresh "
+            "random block from the tickets no round has reviewed yet, with no targeted "
+            "picks -- their only job is to re-measure the error rate after a correction "
+            "pass. Rounds are never pooled: they sample different populations."
+        ),
+    )
+    parser.add_argument(
         "--smoke",
         action="store_true",
         help="Export from the throwaway set in data/smoke/ instead of the eval set.",
     )
     args = parser.parse_args()
 
-    eval_dir, dest = (SMOKE_EVAL, SMOKE_DEST) if args.smoke else (EVAL, DEST)
+    eval_dir = SMOKE_EVAL if args.smoke else EVAL
+    dest = round_dest(args.round_no, args.smoke)
     rows_all = load_all(eval_dir)
     existing = read_existing(dest)
-    pinned = {
-        ticket_id: (row.get("why_selected", RANDOM_CONTROL),
-                    row.get("in_random_block", "false") == "true")
-        for ticket_id, row in existing.items()
-    }
-    selected = select(rows_all, args.n, args.seed, args.random_controls, pinned)
+    if args.round_no > 1:
+        selected = fresh_block(rows_all, args.random_controls, args.seed + args.round_no)
+    else:
+        pinned = {
+            ticket_id: (row.get("why_selected", RANDOM_CONTROL),
+                        row.get("in_random_block", "false") == "true")
+            for ticket_id, row in existing.items()
+        }
+        selected = select(rows_all, args.n, args.seed, args.random_controls, pinned)
     dest.parent.mkdir(parents=True, exist_ok=True)
     with dest.open("w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=COLUMNS)
@@ -221,18 +272,28 @@ def main() -> int:
     for _, reason, _ in selected:
         counts[reason] = counts.get(reason, 0) + 1
     block = sum(1 for _, _, in_block in selected if in_block)
-    print(f"Wrote {dest.relative_to(REPO_ROOT)} ({len(selected)} tickets)")
+    print(f"Wrote {dest.relative_to(REPO_ROOT)} ({len(selected)} tickets, round {args.round_no})")
     for reason, n in sorted(counts.items(), key=lambda kv: -kv[1]):
         print(f"  {n:2d}  {reason}")
-    print(
-        f"\n  {block} of them are the random block (in_random_block=true) -- a uniform "
-        f"draw over all {len(rows_all)} tickets.\n  That block, and only that block, "
-        f"estimates the label error rate of the set as a whole."
-    )
+    if args.round_no > 1:
+        pool = sum(1 for r in rows_all if not r.get("reviewed"))
+        print(
+            f"\n  All {block} are a uniform draw over the {pool} tickets no round has "
+            f"reviewed yet.\n  They estimate the error rate of that population -- not of "
+            f"the whole set, part of\n  which has already been corrected, and not poolable "
+            f"with round 1, which sampled\n  a different population at a different time."
+        )
+    else:
+        print(
+            f"\n  {block} of them are the random block (in_random_block=true) -- a uniform "
+            f"draw over all {len(rows_all)} tickets.\n  That block, and only that block, "
+            f"estimates the label error rate of the set as a whole."
+        )
     flag = " --smoke" if args.smoke else ""
+    rnd = f" --round {args.round_no}" if args.round_no > 1 else ""
     print(
         "\nFill only the CORRECTED_* columns where the draft is wrong; leave them blank "
-        f"where it is right.\nThen run: .venv/bin/python -m triage.import_review{flag}"
+        f"where it is right.\nThen run: .venv/bin/python -m triage.import_review{flag}{rnd}"
     )
     return 0
 

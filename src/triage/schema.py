@@ -26,13 +26,15 @@ class LabelProvenance(BaseModel):
     """Where each label came from.
 
     `second_opinion` means the label was corrected during the review pass by a model of a
-    different family from the drafter. No label in this project is written by a person:
-    nothing here is hand-labelled, and `second_opinion` must never be read as if it were.
+    different family from the drafter. `rule_sweep` means it was corrected mechanically,
+    by a rule derived from a clarification to the client brief, without anyone re-reading
+    the ticket from scratch. No label in this project is written by a person: nothing here
+    is hand-labelled, and neither value may be read as if it were.
     """
 
-    intent: Literal["bitext_mapped", "model_drafted", "second_opinion"]
-    urgency: Literal["model_drafted", "second_opinion"]
-    escalate: Literal["model_drafted", "second_opinion"]
+    intent: Literal["bitext_mapped", "model_drafted", "second_opinion", "rule_sweep"]
+    urgency: Literal["model_drafted", "second_opinion", "rule_sweep"]
+    escalate: Literal["model_drafted", "second_opinion", "rule_sweep"]
 
 
 class Labeler(BaseModel):
@@ -50,12 +52,37 @@ class ReviewSelection(BaseModel):
     """Why a ticket was put in front of a human, recorded when the review is imported.
 
     `in_random_block` is the one that matters statistically: those tickets are a uniform
-    draw over the whole set, so their error rate estimates the set's. The targeted picks
-    were chosen for looking wrong and cannot.
+    draw over the population being sampled, so their error rate estimates it. The
+    targeted picks were chosen for looking wrong and cannot.
+
+    `round` says which review pass drew this ticket, and the rounds are NOT poolable.
+    Round 1 sampled all 252 tickets before any correction; round 2 sampled only the
+    tickets no round had reviewed, after the brief v2 rule sweep. They measure different
+    populations at different times, so their rates are reported side by side and never
+    averaged.
     """
 
     reason: str
     in_random_block: bool = False
+    round: int = 1
+
+
+class Sweep(BaseModel):
+    """A label changed by the rule sweep rather than by re-reading the ticket.
+
+    The sweep applies a named rule from a specific version of the client brief to every
+    ticket that matches it. That is a consistency mechanism, not a check: it can only
+    find the errors the rule describes, it cannot notice anything else that is wrong, and
+    it is run by a model, not by a person. A swept ticket is therefore NOT `reviewed`,
+    and the label error rate must not count it as checked.
+    """
+
+    pattern: str
+    brief_version: str
+    brief_change: str
+    by: str
+    note: str
+    was: dict
 
 
 class Ticket(BaseModel):
@@ -80,6 +107,9 @@ class Ticket(BaseModel):
     review_selection: ReviewSelection | None = None
     review_corrected: bool | None = None
     review_note: str | None = None
+    # Set when the rule sweep changed this ticket's labels. Independent of `reviewed`:
+    # a sweep applies a rule, a review re-reads the ticket.
+    sweep: Sweep | None = None
     # Provenance back to the upstream row, null for authored cases.
     bitext_intent: str | None = None
     bitext_flags: str | None = None

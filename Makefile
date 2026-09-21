@@ -1,4 +1,4 @@
-.PHONY: setup data smoke review import-review eval eval-test spend test clean
+.PHONY: setup data smoke review review-round2 import-review import-review-round2 sweep sweep-apply eval eval-test spend test clean
 
 PY := .venv/bin/python
 
@@ -18,11 +18,23 @@ smoke:                     ## Cheap end-to-end pipeline check on ~16 tickets (no
 spend:                     ## Print total API spend recorded in results/spend_log.jsonl
 	@$(PY) -c "from triage.llm import total_spend; print(f'Project API spend to date: \$${total_spend():.4f}')"
 
-review:                    ## Re-export the human-review sample from the current eval set
+review:                    ## Re-export the round-1 review sample from the current eval set
 	$(PY) -m triage.export_review
 
-import-review:             ## Fold the corrected review CSV back into the eval set
+review-round2:             ## Draw a fresh random block from the tickets no round has reviewed
+	$(PY) -m triage.export_review --round 2 --random-controls 30
+
+import-review:             ## Fold the corrected round-1 review CSV back into the eval set
 	$(PY) -m triage.import_review
+
+import-review-round2:      ## Fold the corrected round-2 CSV back into the eval set
+	$(PY) -m triage.import_review --round 2
+
+sweep:                     ## Show which labels the current brief's rules would change
+	$(PY) -m triage.sweep --dry-run
+
+sweep-apply:               ## Apply those rule changes to the eval set (logged to results/)
+	$(PY) -m triage.sweep --apply
 
 eval:                      ## Score the baseline on the DEV split (this is the command to run)
 	$(PY) -m triage.evaluate --split dev

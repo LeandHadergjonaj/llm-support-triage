@@ -11,6 +11,152 @@ differently — not every implementation choice.
 
 ## 2026-09-21
 
+### D-018 — Three more urgency inconsistencies found, and deliberately not swept
+
+Round 2 and the re-run between them exposed a third shape of label error, the same shape
+as D-009 but on different intents: near-identical tickets split across two urgencies.
+
+| Upstream intent | Split | Minority |
+|---|---|---|
+| `recover_password` | 8 `low`, 4 `normal` | `hl-0088`, `hl-0173`, `hl-0189`, `hl-0191` |
+| `registration_problems` | 10 `low`, 2 `normal` | `hl-0245`, `hl-0250` |
+| `change_shipping_address` | 3 `normal`, 2 `low` | `hl-0139`, `hl-0180` |
+
+I fixed only `hl-0225`, because it was drawn in round 2's random block. The other eight
+are left alone on purpose. Round 2's block is the measurement; sweeping a pattern the
+block itself surfaced would change the population after measuring it, and the 3.3% would
+then describe a set that no longer exists. The estimate is worth more than eight labels.
+
+The address-change group is not merely an inconsistency, either: brief v2 §4 says the ask
+must presuppose a live order, and none of those five tickets names one. The baseline
+predicts `low` for all three of the `normal` ones and is arguably right. That is a
+question for the client, not a sweep.
+
+**Proposed brief change (not made):** §4 should say whether an account-level admin task
+that blocks nothing paid for — a password reset, a sign-up failure, an address edit with
+no order behind it — is `low` or `normal`. Nine minority labels turn on it, and so do
+**12 of the baseline's 16 remaining urgency errors**, in both directions. That makes it
+the single highest-value thing to ask the client, and worth more than any prompt change
+available at this step.
+
+### D-017 — `hl-0093` corrected, revising round 1, and round 1's error rate restated upwards
+
+Round 2 drew `hl-0064` and `hl-0137` — "how soon can I expect my order" — both drafted
+`low`. My blind labels said `normal`, by analogy with `hl-0093`, which round 1 had read
+and confirmed as `normal`. Checking the group, four of the five `delivery_period` tickets
+are `low` and the brief's `normal` example turns on the order being *late*. Nothing in any
+of them is late.
+
+So the drafts were right and my blind label was wrong, and `hl-0093` is the outlier. It is
+corrected to `low`. Round 1's random-block error rate is restated from **16.7% (5/30) to
+20.0% (6/30)**: round 1 confirmed a label that was wrong, and pretending otherwise would
+leave a number on record I know to be an undercount.
+
+`hl-0093` is in the **test** split. It was decided from the brief and the ticket text
+before any v2 run existed, not from a score — but it did cost the baseline a point on
+test, which is the direction that makes the claim credible rather than convenient.
+
+**Why it matters:** this is the clearest evidence in the project so far that a
+second-opinion review by a model is not verification. Round 1 read this ticket, thought
+about it, wrote a note explaining why it was leaving it, and was wrong.
+
+### D-016 — The post-v2 baseline is a new bar, not an improvement, and the v1 baseline stays on record
+
+Brief v2 spelled out the pre-dispatch window, which was the baseline's single largest
+failure mode. Its `high` urgency recall went from 50% to 100% on dev and 67% to 100% on
+test. **None of that is the system getting better.** Two things moved at once: the labels
+(the sweep) and the prompt (the same clarification). A system cannot be marked against
+policy it was never given, so giving it the rule was right — but the resulting number
+measures the policy, not the design.
+
+`results/latest_{dev,test}.json` now hold the v2 run, and the v1 runs stay in `results/`
+under their timestamps. Every result record carries `run.brief_version`, so the two can
+never be quietly compared. **Only v2-vs-v2 comparisons are evidence about design**, which
+is what every later step will be measured on.
+
+The temptation this creates is worth naming: it would be easy to keep "improving" the
+system by clarifying the brief, and every clarification would look like progress. The
+guard is that a brief change must be justified by a contested label found in review,
+written into `docs/client-brief.md` §7 with the ticket that prompted it, and applied to
+the labels and the prompt in the same commit.
+
+### D-015 — The fresh random block is drawn from the never-reviewed remainder, and rounds are never pooled
+
+Round 2 draws 30 tickets uniformly from the 197 that no round had reviewed, not from all
+252. Two reasons. A draw over the whole set would mostly re-read tickets I have already
+read and would measure me agreeing with myself. It would also mix two populations — a
+corrected stratum and an uncorrected one — into a single number describing neither.
+
+Tickets the sweep touched stay in the pool. The sweep is not a check, so a block that
+excluded them could not catch it being wrong; in the event it drew two of them
+(`hl-0018`, `hl-0123`) and confirmed both.
+
+`metrics.label_error_rate` therefore reports per round and never pools: round 1 sampled
+all 252 before any correction, round 2 the unchecked remainder after the sweep. The
+headline is the latest round alone, because it is the only one describing the set as it
+now stands. A test pins this.
+
+**The limit of the round 2 number:** the same model wrote the sweep rules and then
+measured what they left behind. 3.3% is what one reviewer finds after correcting the
+errors that reviewer knows about. It is not an independent audit and must not be quoted
+as one.
+
+### D-014 — The remaining 197 tickets are swept by rule, and a swept ticket is not "reviewed"
+
+`triage.sweep` applies brief v2 changes 3 and 4 to every ticket they match: 13 labels
+across 13 tickets — 2 contradictory `out_of_scope` escalations dropped, 11 pre-dispatch
+order changes raised to `high`. One of the 13 (`hl-0097`) had already been reviewed and
+changes because the brief moved under it, not because the review was wrong.
+
+Two choices inside that worth arguing with:
+
+**Matched on the upstream Bitext intent, not on the ticket text.** `cancel_order` and
+`change_order` are dataset-derived labels, so selecting on them cannot smuggle my own
+reading into the selection. Matching on phrasing would have made this a re-labelling
+wearing a sweep's clothes.
+
+**Where the contradiction was `out_of_scope` escalation vs in-scope intent, the intent
+wins.** On a Bitext ticket the intent comes from the upstream mapping and is the
+better-evidenced of the two.
+
+**A swept ticket is not marked `reviewed`, and `label_error_rate` still counts it as
+unchecked.** The sweep applies a rule; it does not re-read anything, and it can only find
+the errors its rule describes. Marking its 13 tickets as checked would claim a verification
+that did not happen. A test asserts it.
+
+### D-013 — "I can no longer pay for order X" is `order_management`, and therefore `high`
+
+`hl-0097` was the one label D-005 left unresolved. The rule: `billing_and_payment` is a
+payment the customer is *trying* to make and cannot — a declined card, a checkout error,
+a rejected method. Where they can no longer afford or no longer wish to pay, the thing
+that has to happen is to the *order*, so it is `order_management`.
+
+The consequence is that `hl-0097` also picks up the pre-dispatch rule and becomes `high`,
+matching `hl-0136` ("I cannot afford order 46104, I need help canceling it"), which was
+already `high`. Both are the same ticket with different amounts of politeness.
+
+**A later reader could reasonably disagree**, and this is the change in brief v2 I am least
+sure of: `hl-0097` never uses the word cancel. I have taken consistency with `hl-0136` and
+`hl-0031` over literal reading, because a support agent's next action is the same in all
+three.
+
+### D-012 — The brief goes to v2 with the five clarifications, and is versioned from now on
+
+All five proposals from the review (D-005 to D-009) are now in `docs/client-brief.md`,
+with a changelog in §7 naming the ticket that prompted each. This is the step a real
+client does once you put the ambiguous cases in front of them: the brief was not wrong,
+it was silent, and silence is what the labels disagreed inside.
+
+Three of the five (multi-ask tie-break, "can no longer pay", `product_safety` implies
+`high`) codify what the labels already did — `product_safety` changed nothing at all, as
+all five safety tickets were already `high`. Two of them (the `out_of_scope` vocabulary
+rule, the pre-dispatch window) make labels wrong that were previously defensible, which
+is why the sweep exists.
+
+The brief now declares a version, `taxonomy.brief_version()` reads it, and every result
+record carries `run.brief_version`. A score is only interpretable next to the version of
+the brief that produced it, and a test asserts the declared version has a changelog entry.
+
 ### D-011 — The label review is a second opinion, not verification, and the wording says so everywhere
 
 The eval set's labels were drafted by `gpt-5.6-terra` and reviewed by `claude-opus-5`. A

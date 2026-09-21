@@ -15,10 +15,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from triage.llm import REPO_ROOT
-from triage.taxonomy import ESCALATION_REASONS, INTENTS, URGENCIES
+from triage.taxonomy import BRIEF_PATH, ESCALATION_REASONS, INTENTS, URGENCIES, brief_version
 
-BRIEF_PATH = REPO_ROOT / "docs" / "client-brief.md"
+__all__ = ["BRIEF_PATH", "brief_version", "labeler_json_schema", "labeler_system", "labeler_user"]
 
 
 def _brief() -> str:

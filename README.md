@@ -58,14 +58,15 @@ run replaces these projections with measurements.
 
 | Path | What it is |
 |---|---|
-| `docs/client-brief.md` | The client, the 11 categories, the urgency definitions, the escalation rules. **Source of truth for every label.** |
+| `docs/client-brief.md` | The client, the 11 categories, the urgency definitions, the escalation rules. **Source of truth for every label.** Versioned, with a changelog in §7. |
 | `src/triage/taxonomy.py` | Machine-readable mirror of the brief, plus the 27→11 intent mapping |
 | `src/triage/build_dataset.py` | Sample → fill placeholders → draft labels → split |
 | `src/triage/labeler.py` | Drafts urgency and escalation labels from the full brief |
 | `src/triage/baseline.py` | The single-prompt baseline |
 | `src/triage/evaluate.py` | Runs the baseline over a split and scores it |
 | `src/triage/metrics.py` | Scoring, separate from the run loop so results can be re-scored free |
-| `src/triage/export_review.py` | Exports a sample of labels for a human to correct |
+| `src/triage/export_review.py` | Exports a review sample: targeted picks plus a random block, per round |
+| `src/triage/sweep.py` | Applies brief clarifications to every label they touch, by rule |
 | `prompts/baseline_v1.md` | The baseline prompt, rendered so it can be read and diffed |
 | `data/README.md` | Licence position, provenance, and every transformation applied |
 | `tests/` | Checks that run without an API key |
@@ -87,9 +88,10 @@ prompt.
 
 Intent on Bitext tickets comes from a deterministic mapping of the upstream label. Urgency
 and escalation — and intent on the authored hard cases — were **drafted by a model** and
-are marked as such on every ticket. **No label here has been checked by a person.** Some
-have been through a second-opinion review by a model of a different family from the
-drafter; `reviewed`, `reviewed_by` and `label_provenance` record exactly which is which.
+are marked as such on every ticket. **No label here has been checked by a person.** 85 of
+252 have been through a second-opinion review by a model of a different family from the
+drafter, and 13 have had a brief rule applied without being re-read; `reviewed`,
+`reviewed_by`, `sweep` and `label_provenance` record exactly which is which.
 
 This is a real limitation, not a formality: the baseline is scored against labels drafted
 by the same model family, so absolute accuracy is optimistic. `make review` exports a
@@ -105,71 +107,124 @@ kind, because an average over both hides the only interesting part.
 
 ## Baseline results
 
-`baseline_v1` on `gpt-5.6-terra` at `effort=high`, run 2026-09-21, scored against labels
-as corrected by the second-opinion review. Full records in `results/`;
-`results/latest_dev.json` is the bar later versions must beat.
+`baseline_v1` on `gpt-5.6-terra` at `effort=high`, run 2026-09-21 **against client brief
+v2**, scored against labels as corrected by the second-opinion review and the brief v2
+rule sweep. Full records in `results/`; `results/latest_dev.json` is the bar later
+versions must beat.
+
+> ### These are not an improvement over the previous run
+>
+> Brief v2 spelled out the pre-dispatch window, which was the baseline's largest failure
+> mode. Both the **labels** and the **prompt** moved at once, so `high` urgency recall
+> going from 50% to 100% measures the policy getting clearer, not the system getting
+> better. A system cannot be marked against policy it was never given — but the number
+> that results is **a new bar, not evidence of progress**. Only v2-vs-v2 comparisons say
+> anything about design. Every result record carries `run.brief_version`; the brief v1
+> runs stay in `results/` under their timestamps. See `DECISIONS.md` D-016.
 
 > **These are still largely self-agreement figures.** The same model drafted the urgency
 > and escalation labels it is scored against, and **no label has been checked by a
-> person** — 55 of 252 tickets have been through a second-opinion review by
-> `claude-opus-5`, a different model family, which corrected 11. Intent is the partial
-> exception: for the 216 Bitext tickets it comes from a deterministic mapping. Read these
-> as a fixed bar for later versions, not as a measure of how good the triage is.
+> person** — 85 of 252 tickets have been through a second-opinion review by
+> `claude-opus-5`, a different model family, and 13 more had a rule from the brief
+> applied to them without being re-read. Intent is the partial exception: for the 216
+> Bitext tickets it comes from a deterministic mapping. Read these as a fixed bar for
+> later versions, not as a measure of how good the triage is.
 
-| Metric | Dev (144) | Test (108) |
-|---|---:|---:|
-| Intent accuracy | 93.8% | 97.2% |
-| Urgency accuracy | 91.7% | 91.7% |
-| Urgency macro recall | 77.7% | 82.4% |
-| — always predict `low` | 69.4% acc / 33.3% macro | 70.4% acc / 33.3% macro |
-| Escalation accuracy | 98.6% | 98.2% |
-| All three correct | 86.8% | 89.8% |
-| Escalations in the labels | 14 | 11 |
-| Missed escalations | 0 | 0 |
-| Unnecessary escalations | 2 | 2 |
-| Cost per ticket | $0.00112 | $0.00116 |
-| Latency p50 / p95 | 2.1s / 2.8s | 2.1s / 3.1s |
+Columns marked *v1* are the previous baseline of record, kept for context only — they
+were scored against brief v1 labels with a brief v1 prompt and are **not** a like-for-like
+comparison.
 
-Two failure modes came out of the review, both systematic:
+| Metric | Dev (144) | Dev, v1 | Test (108) | Test, v1 |
+|---|---:|---:|---:|---:|
+| Intent accuracy | 95.1% | 93.8% | 96.3% | 97.2% |
+| Urgency accuracy | 95.1% | 91.7% | 91.7% | 91.7% |
+| Urgency macro recall | 94.5% | 77.7% | 92.4% | 82.4% |
+| — always predict `low` | 68.8% acc / 33.3% macro | 69.4% / 33.3% | 72.2% acc / 33.3% macro | 70.4% / 33.3% |
+| Escalation accuracy | 98.6% | 98.6% | 98.2% | 98.2% |
+| Escalation precision / recall | 0.86 / 1.00 | 0.88 / 1.00 | 0.85 / 1.00 | 0.85 / 1.00 |
+| All three correct | 91.0% | 86.8% | 88.9% | 89.8% |
+| Escalations in the labels | 12 | 14 | 11 | 11 |
+| Missed escalations | 0 | 0 | 0 | 0 |
+| Unnecessary escalations | 2 | 2 | 2 | 2 |
+| Cost per ticket | $0.00128 | $0.00112 | $0.00125 | $0.00116 |
+| Latency p50 / p95 | 2.1s / 3.3s | 2.1s / 2.8s | 2.1s / 3.0s | 2.1s / 3.1s |
 
-- **Every unnecessary escalation is a spurious `out_of_scope`** — four across both splits,
-  all ordinary support questions whose vocabulary the model did not recognise ("freemium
-  accounts", "withdrawal fees", "customer claim"). The drafter made the same mistake, so
-  two of these were hidden as *correct* escalations until the review moved the label.
-- **`high` urgency recall is 50% on dev, 67% on test.** All six misses are pre-dispatch
-  order changes or cancellations, called `normal` with 0.84–0.99 confidence. That is
-  exactly the client's stated pain: urgent tickets sitting behind routine ones.
+The only movement that is not explained by the brief change is intent, which no label
+change touched at all: +1.4 points on dev and **−0.9 on test**, both inside the noise a
+one- or two-ticket swing produces at these sizes. `all three correct` falls on test for
+the same reason plus `hl-0093`, a label I corrected against the baseline's answer.
 
-The 14 and 11 reconcile with the 25 escalations now in the label set: the splits
-partition it, so gold escalations sum across them exactly, as do tickets (144 + 108 =
-252). `make test` asserts this rather than leaving it to be checked by eye.
+Per-class urgency, which is the part worth reading:
 
-The review moved the numbers very little — at most 2.8 points on any metric, down on dev
-and up on test — but it changed what they mean. Escalation recall went to 1.00 on both
-splits because both "missed escalations" turned out to be label errors, not model errors.
-In exchange, precision fell on dev from 1.00 to 0.875 as two spurious escalations stopped
-being hidden behind matching wrong labels. The headline barely moved; the error profile
-moved a lot.
+| Class | Dev support | Dev recall | Dev precision | Test support | Test recall | Test precision |
+|---|---:|---:|---:|---:|---:|---:|
+| `high` | 15 | 100.0% | 100.0% | 10 | 100.0% | 100.0% |
+| `normal` | 30 | 86.7% | 89.7% | 20 | 85.0% | 73.9% |
+| `low` | 99 | 97.0% | 96.0% | 78 | 92.3% | 96.0% |
+
+**`high` urgency is measured on 15 tickets on dev and 10 on test.** At n=15 a single miss
+is 6.7 points, and the 95% Wilson interval around 100% recall still runs from 79.6% to
+100% (72.3% to 100% at n=10). Perfect recall here means "no misses in fifteen", which is
+encouraging and is not the same as reliable. The same caveat applies to escalation (12 and 11 in the reference) and to every
+hard-case slice, which are 2 tickets each. Only `low`, and intent overall, have samples
+where a couple of points mean anything.
+
+### What is still wrong
+
+- **All four unnecessary escalations are still spurious `out_of_scope`**, and brief v2 did
+  not fix them: `hl-0112`, `hl-0219`, `hl-0005`, `hl-0034`, every one a "make a claim /
+  file a complaint / write a comment" ticket. The v2 clarification targeted unfamiliar
+  *product and tier names*; these fail on a different trigger — "claim" and "reclamation"
+  reading as a legal or regulatory process rather than as a customer complaint. A
+  candidate v3 clarification, logged but not made.
+- **Twelve of the sixteen remaining urgency errors are one open question**: whether an
+  account-level admin task that blocks nothing paid for is `low` or `normal`. Four are
+  password or PIN resets, four are sign-up failures, four are address edits with no order
+  behind them. The labels are split on it and so is the model, in both directions — the
+  disagreement is with the brief's silence, not with the model. `DECISIONS.md` D-018.
+- Escalation recall is 1.00 on both splits and no escalation is missed.
 
 ## Label quality
 
 The reference labels are model-drafted, so how often they are *wrong* bounds how
-precisely anything else can be known. `make review` exports a sample in two blocks that
-must not be mixed:
+precisely anything else can be known. This has now been measured twice, on two **random
+blocks that must not be pooled** — they sample different populations at different times.
 
-- a **random block** of 30 tickets drawn uniformly from all 252 (`in_random_block=true`).
-  This, and only this, estimates the error rate of the label set. Thirty gives a 95%
-  Wilson interval of roughly ±13 points around a rate near 15% — enough to separate "a
-  few percent" from "a third", not enough to separate 10% from 20%. Fifteen would have
-  been ±18.
-- **targeted picks** — drafter disagreements, self-flagged uncertainty, escalations, hard
-  cases. Chosen for looking wrong, so their error rate is biased upwards by construction.
-  A diagnostic of where the drafter struggles, never a population estimate.
+| | Corrected | Reviewed | Error rate | 95% CI (Wilson) | Population |
+|---|---:|---:|---:|---:|---|
+| Round 1 block | 6 | 30 | 20.0% | 9.5% – 37.3% | all 252, before any correction |
+| **Round 2 block** | 1 | 30 | **3.3%** | 0.6% – 16.7% | the 197 never reviewed, after the sweep |
+| Targeted picks | 6 | 25 | 24.0% | — | chosen for looking wrong; not a population |
 
-`make import-review` folds corrections back in and prints both rates with intervals; the
-next `make eval` carries them into the results. Re-exporting is additive: rows already in
-the file stay, with anything already typed into them, and growing the random block tops it
-up rather than redrawing it.
+Three things about those numbers:
+
+- **Round 1 is restated from 16.7% to 20.0%.** Round 2 found `hl-0093`, a label round 1
+  read and explicitly confirmed, to be wrong. That is the sharpest evidence in the project
+  that a second-opinion review by a model is not verification. `DECISIONS.md` D-017.
+- **Round 2 is not an independent audit.** The same model wrote the sweep rules and then
+  measured what they left behind, so 3.3% is what one reviewer finds after correcting the
+  errors that reviewer already knows about. The true residual rate is higher by an unknown
+  margin.
+- **Both intervals are wide.** Thirty tickets separates "a few percent" from "a third" and
+  nothing finer. Separating 3% from 10% with any confidence needs roughly 150–200 in the
+  block, or a genuinely independent reviewer, which is the only thing that fixes the first
+  two points as well.
+
+`make review` / `make review-round2` export the two kinds of sample; `make import-review`
+folds corrections back in and prints both rounds with intervals. Re-exporting round 1 is
+additive: rows already in the file stay, with anything already typed into them.
+
+### The rule sweep
+
+Brief v2 made two kinds of label wrong that v1 allowed, and both were enumerable, so
+`make sweep` applies them to the whole set rather than re-reading 197 tickets one at a
+time. It changed 13 labels: 2 contradictory `out_of_scope` escalations dropped, 11
+pre-dispatch order changes raised to `high`.
+
+A sweep is a **consistency mechanism, not a check**: it finds only the errors its rules
+describe. Swept tickets are therefore *not* marked `reviewed` and still count as unchecked
+in the error rate above — a test asserts it — and two of them landed in round 2's block,
+where they were confirmed.
 
 ## Status
 

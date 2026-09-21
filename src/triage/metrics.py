@@ -63,9 +63,15 @@ def label_error_rate(tickets: list[dict]) -> dict:
     """How often the drafted labels were wrong, measured on reviewed tickets.
 
     Reported separately for the random block and the targeted picks, because only the
-    former estimates anything about the set as a whole. The targeted rate is expected to
-    be higher and is not a population estimate: those tickets were chosen for being
+    former estimates anything about a population. The targeted rate is expected to be
+    higher and is not a population estimate: those tickets were chosen for being
     suspicious. Quoting them together, or averaging them, would be the mistake.
+
+    Blocks from different review rounds are also kept apart, for the same reason in a
+    different guise: round 1 drew from all 252 tickets before any correction, round 2
+    from the never-reviewed remainder after the rule sweep. `random_block` reports the
+    latest round -- the only one that describes the set as it stands -- and `by_round`
+    keeps the history.
     """
 
     def measure(subset: list[dict]) -> dict:
@@ -82,18 +88,46 @@ def label_error_rate(tickets: list[dict]) -> dict:
             "ci95_method": "Wilson score",
         }
 
+    def selection(t: dict) -> dict:
+        return t.get("review_selection") or {}
+
     def in_block(t: dict) -> bool:
-        return bool((t.get("review_selection") or {}).get("in_random_block"))
+        return bool(selection(t).get("in_random_block"))
+
+    def round_of(t: dict) -> int:
+        return int(selection(t).get("round", 1))
+
+    blocks = [t for t in tickets if in_block(t)]
+    rounds = sorted({round_of(t) for t in blocks})
+    by_round = {
+        str(n): measure([t for t in blocks if round_of(t) == n]) | {
+            "population": (
+                "all tickets, before any correction"
+                if n == 1
+                else "tickets not reviewed in an earlier round, after the rule sweep"
+            )
+        }
+        for n in rounds
+    }
+    # The headline is the LATEST round: it is the only one that describes the label set
+    # as it stands now. Earlier rounds measured a population that has since been
+    # corrected, so pooling them would report an error rate for a set that no longer
+    # exists -- and the rounds sample different populations anyway.
+    latest = rounds[-1] if rounds else None
 
     return {
-        "random_block": measure([t for t in tickets if in_block(t)]),
+        "random_block": measure([t for t in blocks if latest is None or round_of(t) == latest]),
+        "random_block_round": latest,
+        "by_round": by_round,
         "targeted_picks": measure(
             [t for t in tickets if t.get("reviewed") and not in_block(t)]
         ),
         "note": (
-            "Only random_block estimates the label error rate of the set. The targeted "
-            "picks were chosen for being suspicious, so their rate is biased upwards by "
-            "construction and is a diagnostic, not a population estimate."
+            "Only a random block estimates the label error rate of a population. The "
+            "targeted picks were chosen for being suspicious, so their rate is biased "
+            "upwards by construction and is a diagnostic, not a population estimate. "
+            "Rounds sample different populations at different times and are never "
+            "pooled or averaged: `random_block` is the latest round alone."
         ),
     }
 

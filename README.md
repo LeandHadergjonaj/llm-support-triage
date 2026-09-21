@@ -120,10 +120,16 @@ kind, because an average over both hides the only interesting part.
 | Urgency accuracy | 93.1% | 90.7% |
 | Escalation accuracy | 99.3% | 97.2% |
 | All three correct | 88.2% | 87.0% |
-| Missed escalations | 1 of 17 | 2 of 24 |
-| Unnecessary escalations | 0 | 1 |
+| Escalations in the labels | 17 | 12 |
+| Missed escalations | 1 | 1 |
+| Unnecessary escalations | 0 | 2 |
 | Cost per ticket | $0.00112 | $0.00116 |
 | Latency p50 / p95 | 2.1s / 2.8s | 2.1s / 3.1s |
+
+The 17 and 12 reconcile with the 29 escalations in the label summary: the splits
+partition the set, so gold escalations sum across them exactly (17 + 12 = 29), as do
+tickets (144 + 108 = 252). `make test` now asserts this rather than leaving it to be
+checked by eye.
 
 Dev and test agree to within a couple of points on every metric, which is what you would
 expect from one prompt applied to two halves of one stratified sample. It says the split

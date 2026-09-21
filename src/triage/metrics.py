@@ -41,6 +41,48 @@ def _confusions(pairs: list[tuple[str, str]], top: int = 10) -> list[dict]:
     ]
 
 
+def _macro_recall(pairs: list[tuple[str, str]]) -> float | None:
+    """Mean per-class recall over the classes that actually occur in the reference.
+
+    The metric to read when the classes are skewed: plain accuracy on a set that is 69%
+    one class is mostly a report on that class.
+    """
+    classes = {gold for gold, _ in pairs}
+    if not classes:
+        return None
+    recalls = []
+    for cls in classes:
+        support = sum(1 for gold, _ in pairs if gold == cls)
+        hits = sum(1 for gold, pred in pairs if gold == cls and pred == cls)
+        recalls.append(hits / support)
+    return round(sum(recalls) / len(recalls), 4)
+
+
+def majority_class_baseline(pairs: list[tuple[str, str]]) -> dict:
+    """The model against a constant predictor that always says the commonest class.
+
+    Worth stating explicitly wherever the reference distribution is lopsided: a good
+    accuracy can be most of the way to free. The constant predictor scores its own class
+    perfectly and every other class zero, so its macro recall is 1/k -- which is the
+    number the model has to beat to be doing more than following the skew.
+    """
+    if not pairs:
+        return {}
+    counts = Counter(gold for gold, _ in pairs)
+    cls, hits = counts.most_common(1)[0]
+    baseline_acc = hits / len(pairs)
+    model_acc = _accuracy(pairs)
+    return {
+        "most_common_class": cls,
+        "its_share_of_the_reference": round(baseline_acc, 4),
+        "baseline_accuracy": round(baseline_acc, 4),
+        "model_accuracy": model_acc,
+        "accuracy_gain_pp": round((model_acc - baseline_acc) * 100, 1),
+        "baseline_macro_recall": round(1 / len(counts), 4),
+        "model_macro_recall": _macro_recall(pairs),
+    }
+
+
 def score_escalation(rows: list[dict]) -> dict:
     """Escalation broken into the four outcomes the client cares about.
 
@@ -152,6 +194,10 @@ def score(rows: list[dict]) -> dict:
         "escalation": score_escalation(rows),
         "intent_per_class": _per_class(intent_pairs, list(INTENTS)),
         "urgency_per_class": _per_class(urgency_pairs, list(URGENCIES)),
+        "urgency_macro_recall": _macro_recall(urgency_pairs),
+        "intent_macro_recall": _macro_recall(intent_pairs),
+        "urgency_vs_majority_class": majority_class_baseline(urgency_pairs),
+        "intent_vs_majority_class": majority_class_baseline(intent_pairs),
         "intent_confusions": _confusions(intent_pairs),
         "urgency_confusions": _confusions(urgency_pairs, top=6),
         "confidence_calibration": calibration(rows),

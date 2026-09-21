@@ -29,7 +29,7 @@ from triage.llm import (
     get_client,
     record_spend,
 )
-from triage.metrics import score_slices
+from triage.metrics import score_escalation, score_slices
 from triage.schema import Prediction, Ticket, prediction_json_schema
 
 EVAL_DIR = REPO_ROOT / "data" / "eval"
@@ -65,6 +65,59 @@ def load_split(split: str, eval_dir: Path, smoke: bool) -> list[Ticket]:
     if smoke and not stamped:
         raise SystemExit(f"--smoke was passed but {path} holds no smoke-test tickets.")
     return tickets
+
+
+def reconcile_escalations(eval_dir: str | Path, split: str, rows: list[dict]) -> dict:
+    """Tie the escalations scored in this run back to the escalations in the label set.
+
+    Three counts get quoted in different places and are easy to confuse: how many
+    escalations the whole 252-ticket set carries, how many are in this split, and how
+    many this run actually scored (fewer, if --limit was used). They only agree if the
+    splits partition the set, so the arithmetic is done here and printed rather than
+    left to whoever is reading two documents side by side.
+    """
+    eval_dir = Path(eval_dir)
+    per_split: dict[str, dict[str, int]] = {}
+    for name in ("dev", "test"):
+        path = eval_dir / f"{name}.jsonl"
+        if not path.exists():
+            continue
+        labels = [
+            json.loads(line)["labels"]
+            for line in path.read_text().splitlines()
+            if line.strip()
+        ]
+        per_split[name] = {
+            "tickets": len(labels),
+            "escalations": sum(1 for x in labels if x["escalate"]),
+        }
+
+    esc = score_escalation(rows)
+    scored_gold = esc["correct_escalations"] + esc["missed_escalations"]
+    this = per_split.get(split, {"tickets": len(rows), "escalations": scored_gold})
+    set_tickets = sum(v["tickets"] for v in per_split.values())
+    set_escalations = sum(v["escalations"] for v in per_split.values())
+
+    return {
+        "eval_set": {"tickets": set_tickets, "escalations": set_escalations},
+        "by_split": per_split,
+        "this_run": {
+            "split": split,
+            "tickets_scored": len(rows),
+            "escalations_in_reference": scored_gold,
+            "of_which_caught": esc["correct_escalations"],
+            "of_which_missed": esc["missed_escalations"],
+            "predicted_but_not_in_reference": esc["unnecessary_escalations"],
+        },
+        "checks": {
+            "splits_partition_the_set": set_tickets
+            == sum(v["tickets"] for v in per_split.values()),
+            "split_escalations_sum_to_set": set_escalations
+            == sum(v["escalations"] for v in per_split.values()),
+            "run_scored_the_whole_split": len(rows) == this["tickets"],
+            "reference_escalations_match_split": scored_gold == this["escalations"],
+        },
+    }
 
 
 def run(
@@ -119,6 +172,45 @@ def run(
     return rows, total
 
 
+def _pct(value: float | None) -> str:
+    return "--" if value is None else f"{value:.1%}"
+
+
+def _reconciliation_lines(record: dict) -> list[str]:
+    """Tie this split's escalation counts back to the label set's, in the report itself."""
+    rec = record.get("escalation_reconciliation")
+    if not rec:
+        return []
+    run, whole, splits = rec["this_run"], rec["eval_set"], rec["by_split"]
+    per = "; ".join(
+        f"{name} {v['escalations']} of {v['tickets']}" for name, v in sorted(splits.items())
+    )
+    lines = [
+        "### Reconciliation with the label set",
+        "",
+        (
+            f"The eval set holds **{whole['escalations']} escalations across "
+            f"{whole['tickets']} tickets** ({per}). The splits partition the set, so "
+            f"those counts add up rather than overlap."
+        ),
+        "",
+        (
+            f"This run scored the **{run['split']}** split: {run['tickets_scored']} "
+            f"tickets carrying {run['escalations_in_reference']} reference escalations, "
+            f"of which {run['of_which_caught']} were caught and {run['of_which_missed']} "
+            f"missed, plus {run['predicted_but_not_in_reference']} escalations predicted "
+            f"that the reference does not have. "
+            f"{run['escalations_in_reference']} = {run['of_which_caught']} + "
+            f"{run['of_which_missed']}."
+        ),
+        "",
+    ]
+    failed = [name for name, ok in rec["checks"].items() if not ok]
+    if failed:
+        lines += [f"> :warning: **Reconciliation check failed:** {', '.join(failed)}.", ""]
+    return lines
+
+
 def markdown_summary(record: dict) -> str:
     meta, scores, usage = record["run"], record["scores"], record["usage"]
     overall = scores["overall"]
@@ -126,6 +218,7 @@ def markdown_summary(record: dict) -> str:
     quality = record["label_quality"]
     reviewed = quality["human_reviewed"]
     n = overall["n"]
+    maj = overall["urgency_vs_majority_class"]
 
     # The caveat that matters most goes first and is not softened. The same model drafted
     # these labels and produced these predictions, so a large part of the agreement below
@@ -189,6 +282,41 @@ def markdown_summary(record: dict) -> str:
             f"Precision {esc['precision']}, recall {esc['recall']}. "
             f"Reference escalation rate {esc['gold_escalation_rate']:.1%}, "
             f"predicted {esc['predicted_escalation_rate']:.1%}."
+        ),
+        "",
+        *_reconciliation_lines(record),
+        "## Urgency",
+        "",
+        (
+            "Urgency is heavily skewed, so accuracy alone flatters any model that follows "
+            "the skew. The comparison against always predicting the most common class is "
+            "the one to read, and macro recall -- the mean of the per-class recalls -- is "
+            "the number that does not improve just by guessing `low` more often."
+        ),
+        "",
+        "| | Model | Always predict most common class |",
+        "|---|---:|---:|",
+        (
+            f"| Accuracy | {maj['model_accuracy']:.1%} | {maj['baseline_accuracy']:.1%} "
+            f"(`{maj['most_common_class']}`, {maj['its_share_of_the_reference']:.1%} of "
+            f"the reference) |"
+        ),
+        (
+            f"| Macro recall | {maj['model_macro_recall']:.1%} | "
+            f"{maj['baseline_macro_recall']:.1%} |"
+        ),
+        "",
+        (
+            f"Accuracy gain over the constant predictor: "
+            f"**{maj['accuracy_gain_pp']:+.1f} points**."
+        ),
+        "",
+        "| Urgency | Support | Predicted | Recall | Precision |",
+        "|---|---:|---:|---:|---:|",
+        *(
+            f"| `{cls}` | {v['support']} | {v['predicted']} | "
+            f"{_pct(v['recall'])} | {_pct(v['precision'])} |"
+            for cls, v in overall["urgency_per_class"].items()
         ),
         "",
         "## Cost and latency",
@@ -338,6 +466,7 @@ def main() -> int:
         },
         "complete": not incomplete,
         "usage": usage.summary(args.model),
+        "escalation_reconciliation": reconcile_escalations(eval_dir, args.split, rows),
         "scores": score_slices(rows),
         "predictions": rows,
     }

@@ -16,7 +16,7 @@ from triage.baseline import system_prompt
 from triage.evaluate import load_split, markdown_summary
 from triage.labeler import BRIEF_PATH, labeler_json_schema
 from triage.llm import DEFAULT_BUDGET_USD, DEFAULT_MODEL, PRICING_PER_MTOK, Budget, Usage
-from triage.metrics import score, score_escalation
+from triage.metrics import majority_class_baseline, score, score_escalation, score_slices
 from triage.schema import Prediction, Ticket, prediction_json_schema
 from triage.taxonomy import (
     BITEXT_INTENT_TO_CATEGORY,
@@ -260,30 +260,94 @@ def test_budget_default_is_the_documented_two_dollars():
     assert DEFAULT_BUDGET_USD == 2.00
 
 
-def test_same_model_scoring_is_flagged_in_the_summary():
-    """The caveat has to be impossible to miss when a model marks its own work."""
-    record = {
+def _fake_record(same_model: bool) -> dict:
+    """A run record built by the real scoring code, so this fixture cannot drift."""
+    rows = [
+        {
+            "id": f"hl-{i:04d}",
+            "text": "t",
+            "hard_case": i == 0,
+            "hard_case_kind": "safety" if i == 0 else None,
+            "human_reviewed": False,
+            "gold": {"intent": "product_issue", "urgency": "low" if i else "high",
+                     "escalate": i == 0,
+                     "escalation_reasons": ["product_safety"] if i == 0 else []},
+            "pred": {"intent": "product_issue", "urgency": "low" if i else "high",
+                     "escalate": i == 0,
+                     "escalation_reasons": ["product_safety"] if i == 0 else [],
+                     "confidence": 0.9, "rationale": "r"},
+        }
+        for i in range(4)
+    ]
+    return {
         "run": {"split": "dev", "prompt_version": "baseline_v1", "model": "m",
                 "effort": "high", "workers": 8, "started_at": "now", "tag": None},
-        "label_quality": {"human_reviewed": 0, "total": 1, "smoke_test": False,
-                          "labelers": ["m (effort high)"], "scored_against_own_labels": True},
-        "usage": {"total_cost_usd": 0.1, "calls": 1, "cost_per_ticket_usd": 0.1,
+        "label_quality": {"human_reviewed": 0, "total": len(rows), "smoke_test": False,
+                          "labelers": ["m (effort high)"],
+                          "scored_against_own_labels": same_model},
+        "usage": {"total_cost_usd": 0.1, "calls": len(rows), "cost_per_ticket_usd": 0.025,
                   "latency_mean_s": 1.0, "latency_p50_s": 1.0, "latency_p95_s": 1.0,
                   "cached_tokens": 0, "cache_write_tokens": 0, "reasoning_tokens": 0},
-        "scores": {"overall": {
-            "n": 1, "intent_accuracy": 1.0, "urgency_accuracy": 1.0,
-            "all_three_correct": 1.0, "intent_confusions": [], "confidence_calibration": [],
-            "escalation": {"accuracy": 1.0, "correct_escalations": 0,
-                           "unnecessary_escalations": 0, "missed_escalations": 0,
-                           "correct_non_escalations": 1, "precision": None, "recall": None,
-                           "gold_escalation_rate": 0.0, "predicted_escalation_rate": 0.0},
-        }},
+        "escalation_reconciliation": {
+            "eval_set": {"tickets": 4, "escalations": 1},
+            "by_split": {"dev": {"tickets": 4, "escalations": 1}},
+            "this_run": {"split": "dev", "tickets_scored": 4,
+                         "escalations_in_reference": 1, "of_which_caught": 1,
+                         "of_which_missed": 0, "predicted_but_not_in_reference": 0},
+            "checks": {"ok": True},
+        },
+        "scores": score_slices(rows),
     }
-    summary = markdown_summary(record)
+
+
+def test_same_model_scoring_is_flagged_in_the_summary():
+    """The caveat has to be impossible to miss when a model marks its own work."""
+    summary = markdown_summary(_fake_record(same_model=True))
     assert "self-agreement, not accuracy" in summary
     assert "drafted the reference labels it is being scored against here" in summary
     # It must come before the numbers, not in a footnote.
     assert summary.index("self-agreement") < summary.index("## Headline")
+    assert "self-agreement, not accuracy" not in markdown_summary(_fake_record(False))
 
-    record["label_quality"]["scored_against_own_labels"] = False
-    assert "self-agreement, not accuracy" not in markdown_summary(record)
+
+def test_summary_shows_urgency_per_class_and_the_majority_class_comparison():
+    summary = markdown_summary(_fake_record(same_model=True))
+    assert "## Urgency" in summary
+    assert "Always predict most common class" in summary
+    assert "Macro recall" in summary
+    for urgency in ("low", "high"):
+        assert f"| `{urgency}` |" in summary
+
+
+def test_summary_reconciles_escalations_with_the_label_set():
+    summary = markdown_summary(_fake_record(same_model=True))
+    assert "Reconciliation with the label set" in summary
+    assert "1 = 1 + 0" in summary  # reference = caught + missed
+
+
+def test_majority_class_baseline_beats_nothing_on_a_skewed_set():
+    pairs = [("low", "low")] * 90 + [("high", "low")] * 10
+    maj = majority_class_baseline(pairs)
+    assert maj["most_common_class"] == "low"
+    assert maj["baseline_accuracy"] == 0.9
+    # A model that only ever says "low" matches the constant predictor exactly, and
+    # macro recall is what exposes that.
+    assert maj["model_accuracy"] == maj["baseline_accuracy"]
+    assert maj["accuracy_gain_pp"] == 0.0
+    assert maj["model_macro_recall"] == maj["baseline_macro_recall"] == 0.5
+
+
+def test_dev_and_test_escalations_sum_to_the_label_set():
+    """The 17 + 12 = 29 check, asserted rather than eyeballed."""
+    splits = {}
+    for name in ("dev", "test"):
+        path = REPO / "data" / "eval" / f"{name}.jsonl"
+        if not path.exists():
+            pytest.skip("eval set not built")
+        rows = [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+        splits[name] = rows
+    ids = [r["id"] for rows in splits.values() for r in rows]
+    assert len(ids) == len(set(ids)), "a ticket appears in both splits"
+    total_escalations = sum(r["labels"]["escalate"] for rows in splits.values() for r in rows)
+    per_split = {k: sum(r["labels"]["escalate"] for r in v) for k, v in splits.items()}
+    assert sum(per_split.values()) == total_escalations

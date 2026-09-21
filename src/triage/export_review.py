@@ -37,6 +37,7 @@ COLUMNS = [
     "drafted_escalate",
     "drafted_escalation_reasons",
     "why_selected",
+    "in_random_block",
     "drafter_note",
     "CORRECTED_intent",
     "CORRECTED_urgency",
@@ -60,32 +61,75 @@ def load_all(eval_dir: Path) -> list[dict]:
     return rows
 
 
-def select(rows: list[dict], n: int, seed: int) -> list[tuple[dict, str]]:
-    rng = random.Random(seed)
+RANDOM_CONTROL = "random control"
+
+
+def select(
+    rows: list[dict], n: int, seed: int, random_controls: int
+) -> list[tuple[dict, str, bool]]:
+    """Pick the review sample. Returns (ticket, why_selected, in_random_block).
+
+    Two jobs that pull in different directions, so they are drawn separately:
+
+    Targeted picks answer "are the labels wrong where we most suspect them" -- drafter
+    disagreements, self-flagged uncertainty, escalations, hard cases. Their error rate is
+    biased upwards by construction and says nothing about the set as a whole.
+
+    The random block answers "how wrong is the label set overall". For that it has to be
+    a uniform draw over every ticket, so it is sampled from all of them with its own
+    random stream -- not from what the targeted picks left behind, which would exclude
+    the most suspicious tickets and bias the estimate down. A ticket can therefore be in
+    both: it is listed once, keeping its targeted reason, with `in_random_block` true.
+    Counting errors over exactly the flagged rows gives the unbiased estimate.
+
+    Drawing the two independently also means adding random controls later cannot displace
+    a targeted pick already under review.
+    """
     picked: dict[str, tuple[dict, str]] = {}
+    targeted_budget = max(0, n - random_controls)
+
+    rng = random.Random(seed)
 
     def take(candidates: list[dict], reason: str, quota: int) -> None:
-        """Fill up to `quota` from `candidates`, never exceeding the overall budget."""
+        """Fill up to `quota` from `candidates`, never exceeding the targeted budget."""
         pool = [r for r in candidates if r["id"] not in picked]
         rng.shuffle(pool)
-        for row in pool[: min(quota, n - len(picked))]:
+        for row in pool[: min(quota, targeted_budget - len(picked))]:
             picked[row["id"]] = (row, reason)
 
-    # Priority order. Controls come last and only fill whatever budget is left, so a
-    # targeted pick is never displaced by a random one.
-    take([r for r in rows if r.get("intent_disagreement")], "drafter disagreed with Bitext intent", 8)
+    take([r for r in rows if r.get("intent_disagreement")],
+         "drafter disagreed with Bitext intent", 8)
     take([r for r in rows if r.get("drafter_uncertain")], "drafter flagged uncertain", 8)
     take([r for r in rows if r["labels"]["escalate"]], "escalation (rare, high-leverage)", 7)
     take([r for r in rows if r["hard_case"]], "authored hard case", 4)
-    take([r for r in rows if not r["labels"]["escalate"] and not r["hard_case"]], "random control", n)
 
-    return sorted(picked.values(), key=lambda pair: pair[0]["id"])
+    # Separate stream, so the size of this block never perturbs the picks above.
+    block = random.Random(seed + 1000).sample(rows, min(random_controls, len(rows)))
+    in_block = {r["id"] for r in block}
+    for row in block:
+        picked.setdefault(row["id"], (row, RANDOM_CONTROL))
+
+    return sorted(
+        ((row, reason, row["id"] in in_block) for row, reason in picked.values()),
+        key=lambda triple: triple[0]["id"],
+    )
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("-n", type=int, default=30)
+    parser.add_argument("-n", type=int, default=42)
     parser.add_argument("--seed", type=int, default=7)
+    parser.add_argument(
+        "--random-controls",
+        type=int,
+        default=15,
+        metavar="N",
+        help=(
+            "Reserve this many purely random tickets. These are the only ones that "
+            "estimate the label error rate of the set as a whole; the targeted picks "
+            "are chosen for being suspicious and overstate it."
+        ),
+    )
     parser.add_argument(
         "--smoke",
         action="store_true",
@@ -94,12 +138,13 @@ def main() -> int:
     args = parser.parse_args()
 
     eval_dir, dest = (SMOKE_EVAL, SMOKE_DEST) if args.smoke else (EVAL, DEST)
-    selected = select(load_all(eval_dir), args.n, args.seed)
+    rows_all = load_all(eval_dir)
+    selected = select(rows_all, args.n, args.seed, args.random_controls)
     dest.parent.mkdir(parents=True, exist_ok=True)
     with dest.open("w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=COLUMNS)
         writer.writeheader()
-        for row, reason in selected:
+        for row, reason, in_block in selected:
             labels = row["labels"]
             writer.writerow(
                 {
@@ -111,6 +156,7 @@ def main() -> int:
                     "drafted_escalate": str(labels["escalate"]).lower(),
                     "drafted_escalation_reasons": "|".join(labels["escalation_reasons"]),
                     "why_selected": reason,
+                    "in_random_block": str(in_block).lower(),
                     "drafter_note": row.get("drafter_note", ""),
                     "CORRECTED_intent": "",
                     "CORRECTED_urgency": "",
@@ -121,11 +167,17 @@ def main() -> int:
             )
 
     counts: dict[str, int] = {}
-    for _, reason in selected:
+    for _, reason, _ in selected:
         counts[reason] = counts.get(reason, 0) + 1
+    block = sum(1 for _, _, in_block in selected if in_block)
     print(f"Wrote {dest.relative_to(REPO_ROOT)} ({len(selected)} tickets)")
     for reason, n in sorted(counts.items(), key=lambda kv: -kv[1]):
         print(f"  {n:2d}  {reason}")
+    print(
+        f"\n  {block} of them are the random block (in_random_block=true) -- a uniform "
+        f"draw over all {len(rows_all)} tickets.\n  That block, and only that block, "
+        f"estimates the label error rate of the set as a whole."
+    )
     flag = " --smoke" if args.smoke else ""
     print(
         "\nFill only the CORRECTED_* columns where the draft is wrong; leave them blank "

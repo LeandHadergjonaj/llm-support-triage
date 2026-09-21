@@ -1,0 +1,676 @@
+[
+  {
+    "id": "hl-0011",
+    "split": "test",
+    "ticket_text": "Two things to return from order 52001 - the brass floor lamp at £74 and the pair of side tables at £58. Neither fits the space. Can I return both together?",
+    "intent": "returns_and_refunds",
+    "urgency": "normal",
+    "confidence": 0.98,
+    "escalation_reasons": [
+      "refund_over_threshold"
+    ],
+    "rationale": "The customer is asking to return two items together, and the stated total value (£132) exceeds the £100 refund escalation threshold.",
+    "handled_by": "human",
+    "order_facts": "Order 52001 (verified database record):\n{\n  \"order_id\": \"52001\",\n  \"customer_name\": \"E. Lindqvist\",\n  \"items\": [\n    {\n      \"name\": \"Brass floor lamp\",\n      \"unit_price_gbp\": 74.0,\n      \"qty\": 1\n    },\n    {\n      \"name\": \"Side table, pair\",\n      \"unit_price_gbp\": 58.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 132.0,\n  \"delivery_option\": \"standard\",\n  \"placed_date\": \"2026-09-10\",\n  \"dispatch_state\": \"delivered\",\n  \"dispatched_date\": \"2026-09-12\",\n  \"delivered_date\": \"2026-09-15\",\n  \"expected_delivery_date\": \"2026-09-15\",\n  \"status\": \"active\",\n  \"refund\": null\n}",
+    "policy_docs": [
+      "returns_and_refunds.md"
+    ],
+    "handover_note": "This has been escalated to a person because the combined return value is over £100 and requires senior review.\n\nThe customer is asking to return both items from verified order 52001 because they do not fit the space: one Brass floor lamp (£74) and one Side table, pair (£58). The order was delivered on 15 September 2026 via standard delivery. The combined value is £132; no refund is recorded.\n\nUrgency: routine. This is a change-of-mind return request, with no safety issue or time-critical consequence stated.",
+    "suggested_reply": "Yes — you can return both items together. As they were delivered on 15 September and this is a change-of-mind return, they can be returned within 30 days of delivery provided they are unused and in their original packaging.\n\nThe combined return value is £132. There is no restocking fee for these standard-delivery items. Because the total refund would be over £100, it will need to go through senior review before it is processed. Once approved, the refund will be sent to your original payment method within 5 working days.",
+    "generated_at": "2026-09-21T16:24:30+00:00"
+  },
+  {
+    "id": "hl-0012",
+    "split": "dev",
+    "ticket_text": "correct order 50339",
+    "intent": "order_management",
+    "urgency": "high",
+    "confidence": 0.86,
+    "escalation_reasons": [],
+    "rationale": "This appears to request a correction to a live order before dispatch, and no escalation trigger is mentioned.",
+    "handled_by": "self",
+    "order_facts": "Order 50339 (verified database record):\n{\n  \"order_id\": \"50339\",\n  \"customer_name\": \"R. Okafor\",\n  \"items\": [\n    {\n      \"name\": \"Bramwell rattan bedside table\",\n      \"unit_price_gbp\": 89.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 89.0,\n  \"delivery_option\": \"standard\",\n  \"placed_date\": \"2026-09-20\",\n  \"dispatch_state\": \"not_dispatched\",\n  \"dispatched_date\": null,\n  \"delivered_date\": null,\n  \"expected_delivery_date\": \"2026-09-25\",\n  \"status\": \"active\",\n  \"refund\": null\n}",
+    "policy_docs": [
+      "cancellations_and_order_changes.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Thanks for confirming order 50339. It has not yet dispatched, so it can be corrected free of charge. Please let us know what you would like changed (for example, the item, quantity, or delivery address), and we’ll pass the request to the warehouse queue straight away.",
+    "generated_at": "2026-09-21T16:24:11+00:00"
+  },
+  {
+    "id": "hl-0028",
+    "split": "dev",
+    "ticket_text": "icant track order 49488",
+    "intent": "delivery_and_shipping",
+    "urgency": "normal",
+    "confidence": 0.96,
+    "escalation_reasons": [],
+    "rationale": "The customer is unable to track an existing order, with no stated escalation trigger.",
+    "handled_by": "self",
+    "order_facts": "Order 49488 (verified database record):\n{\n  \"order_id\": \"49488\",\n  \"customer_name\": \"S. Iqbal\",\n  \"items\": [\n    {\n      \"name\": \"Hartwell table lamp, pair\",\n      \"unit_price_gbp\": 68.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 68.0,\n  \"delivery_option\": \"standard\",\n  \"placed_date\": \"2026-09-15\",\n  \"dispatch_state\": \"dispatched\",\n  \"dispatched_date\": \"2026-09-17\",\n  \"delivered_date\": null,\n  \"expected_delivery_date\": \"2026-09-22\",\n  \"status\": \"active\",\n  \"refund\": null\n}",
+    "policy_docs": [
+      "delivery_and_shipping.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Hi S. Iqbal,\n\nOrder 49488 has been dispatched. A dispatch confirmation email with your tracking link should have been sent when it left the warehouse.\n\nIts expected delivery date is 22 September 2026. Please check your email, including junk/spam, for the dispatch confirmation. If you still cannot find the tracking link, reply here and we can look into it.",
+    "generated_at": "2026-09-21T16:24:11+00:00"
+  },
+  {
+    "id": "hl-0031",
+    "split": "test",
+    "ticket_text": "i need help with cancelling order 51986",
+    "intent": "order_management",
+    "urgency": "high",
+    "confidence": 0.99,
+    "escalation_reasons": [],
+    "rationale": "This is a request to cancel a live order, which is time-sensitive before dispatch; no escalation trigger is stated.",
+    "handled_by": "self",
+    "order_facts": "Order 51986 (verified database record):\n{\n  \"order_id\": \"51986\",\n  \"customer_name\": \"T. Marsh\",\n  \"items\": [\n    {\n      \"name\": \"Elden console table\",\n      \"unit_price_gbp\": 210.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 210.0,\n  \"delivery_option\": \"two_person\",\n  \"placed_date\": \"2026-09-19\",\n  \"dispatch_state\": \"not_dispatched\",\n  \"dispatched_date\": null,\n  \"delivered_date\": null,\n  \"expected_delivery_date\": \"2026-09-27\",\n  \"status\": \"active\",\n  \"refund\": null\n}",
+    "policy_docs": [
+      "cancellations_and_order_changes.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Your order 51986 has not dispatched, so it can be cancelled free of charge. As the full order total is £210, the refund would require review by a senior member of the support team before it is processed. Once approved, it will be returned to your original payment method within 5 working days.",
+    "generated_at": "2026-09-21T16:24:30+00:00"
+  },
+  {
+    "id": "hl-0033",
+    "split": "dev",
+    "ticket_text": "I'd like to return the Marlow three-seater sofa from order 46115. It's too large for the room. The order was £680. What do I need to do to arrange collection and get the money back?",
+    "intent": "returns_and_refunds",
+    "urgency": "normal",
+    "confidence": 0.99,
+    "escalation_reasons": [],
+    "rationale": "The customer is requesting a return and refund arrangement; although the order value is stated as £680, no specific refund, credit, replacement, or compensation amount is requested, so the over-threshold escalation criterion does not apply.",
+    "handled_by": "self",
+    "order_facts": "Order 46115 (verified database record):\n{\n  \"order_id\": \"46115\",\n  \"customer_name\": \"P. Andersson\",\n  \"items\": [\n    {\n      \"name\": \"Marlow three-seater sofa\",\n      \"unit_price_gbp\": 680.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 680.0,\n  \"delivery_option\": \"two_person\",\n  \"placed_date\": \"2026-08-02\",\n  \"dispatch_state\": \"delivered\",\n  \"dispatched_date\": \"2026-08-09\",\n  \"delivered_date\": \"2026-08-14\",\n  \"expected_delivery_date\": \"2026-08-14\",\n  \"status\": \"active\",\n  \"refund\": null\n}",
+    "policy_docs": [
+      "returns_and_refunds.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Your Marlow three-seater sofa was delivered on 14 August. As this was a two-person delivery and the return is for change of mind, it can be returned within 14 days of delivery, provided it is unused and in its original packaging.\n\nWe can arrange collection through the two-person delivery network. A 15% restocking fee applies to change-of-mind returns of large furniture and will be deducted from the refund. The refund for this £680 sofa is over £100, so it will need senior-team review before it can be processed.\n\nOnce the sofa has been collected, received and checked by the warehouse, the refund can be approved. Approved refunds go back to the original payment method within 5 working days of approval.",
+    "generated_at": "2026-09-21T16:24:11+00:00"
+  },
+  {
+    "id": "hl-0050",
+    "split": "dev",
+    "ticket_text": "Just to let you know, the table lamp from order 50441 gets extremely hot after about twenty minutes and there was a burning smell yesterday. I've unplugged it and put it in the garage. Not after a refund, just thought someone should know.",
+    "intent": "product_issue",
+    "urgency": "high",
+    "confidence": 0.99,
+    "escalation_reasons": [
+      "product_safety"
+    ],
+    "rationale": "The lamp overheating and producing a burning smell indicates a potential physical safety hazard, so it requires escalation even though no refund is requested.",
+    "handled_by": "human",
+    "order_facts": "Order 50441 (verified database record):\n{\n  \"order_id\": \"50441\",\n  \"customer_name\": \"K. Osei\",\n  \"items\": [\n    {\n      \"name\": \"Hartwell table lamp\",\n      \"unit_price_gbp\": 44.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 44.0,\n  \"delivery_option\": \"standard\",\n  \"placed_date\": \"2026-08-25\",\n  \"dispatch_state\": \"delivered\",\n  \"dispatched_date\": \"2026-08-27\",\n  \"delivered_date\": \"2026-08-30\",\n  \"expected_delivery_date\": \"2026-08-30\",\n  \"status\": \"active\",\n  \"refund\": null\n}",
+    "policy_docs": [
+      "product_safety.md",
+      "returns_and_refunds.md"
+    ],
+    "handover_note": "This has been escalated to a person because it is a product-safety report: the table lamp overheats and produced a burning smell.\n\nThe customer reports that the Hartwell table lamp from verified order 50441 becomes extremely hot after around 20 minutes of use and had a burning smell. They have unplugged it and placed it in the garage. The order was delivered on 2026-08-30; it contains one Hartwell table lamp (£44). The customer is not requesting a refund.\n\nUrgency: high. This remains a high-urgency safety issue despite the customer’s calm tone and not seeking a refund.\n\nImmediate safety instruction: ask the customer to keep the lamp unplugged and not use or attempt to repair it. Do not ask them to return it by normal parcel while it may present a handling risk.",
+    "suggested_reply": "Thank you for letting us know. Please keep the lamp unplugged and do not use or attempt to repair it. As there was overheating and a burning smell, we’re treating this as a product-safety report and will pass the full details to a specialist team for investigation. Please do not return it through the normal parcel process unless they advise you to do so.",
+    "generated_at": "2026-09-21T16:24:15+00:00"
+  },
+  {
+    "id": "hl-0054",
+    "split": "test",
+    "ticket_text": "I need to cancel order 52310 please, I only placed it an hour ago and I've realised I ordered the wrong size rug. Also I think I've been charged twice, there are two pending amounts on my card for £64.99 each.",
+    "intent": "order_management",
+    "urgency": "high",
+    "confidence": 0.99,
+    "escalation_reasons": [],
+    "rationale": "The primary request is to cancel a live order placed an hour ago, which is time-sensitive before dispatch; the stated pending charges are below the escalation threshold and no other escalation trigger is present.",
+    "handled_by": "self",
+    "order_facts": "Order 52310 (verified database record):\n{\n  \"order_id\": \"52310\",\n  \"customer_name\": \"W. Chappell\",\n  \"items\": [\n    {\n      \"name\": \"Ashford wool rug, large\",\n      \"unit_price_gbp\": 64.99,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 64.99,\n  \"delivery_option\": \"standard\",\n  \"placed_date\": \"2026-09-21\",\n  \"dispatch_state\": \"not_dispatched\",\n  \"dispatched_date\": null,\n  \"delivered_date\": null,\n  \"expected_delivery_date\": \"2026-09-26\",\n  \"status\": \"active\",\n  \"refund\": null,\n  \"payment\": {\n    \"status\": \"two_pending_authorisations\",\n    \"note\": \"Two separate \\u00a364.99 authorisation holds visible on the customer's card; only one will be captured at dispatch, the other drops off automatically. Not a duplicate charge.\"\n  }\n}",
+    "policy_docs": [
+      "cancellations_and_order_changes.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Your order is not yet dispatched, so your cancellation request can be sent to the warehouse straight away. Cancelling before dispatch is free of charge, and the £64.99 payment will be refunded to your original payment method once the cancellation is processed. This refund does not require senior review, as it is not over £100; approved refunds are returned within 5 working days of approval.\n\nOn the two £64.99 pending entries: these are two authorisation holds, not two charges. Only one amount will be captured; the other should drop off automatically, which can take up to 7 days depending on your card issuer.",
+    "generated_at": "2026-09-21T16:24:30+00:00"
+  },
+  {
+    "id": "hl-0068",
+    "split": "dev",
+    "ticket_text": "want assistance to cancel order 47787",
+    "intent": "order_management",
+    "urgency": "high",
+    "confidence": 0.99,
+    "escalation_reasons": [],
+    "rationale": "This is a request to cancel a live order, so it is time-sensitive before dispatch; no escalation trigger is present.",
+    "handled_by": "self",
+    "order_facts": "Order 47787 (verified database record):\n{\n  \"order_id\": \"47787\",\n  \"customer_name\": \"C. Nkemelu\",\n  \"items\": [\n    {\n      \"name\": \"Selby bookcase\",\n      \"unit_price_gbp\": 175.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 175.0,\n  \"delivery_option\": \"standard\",\n  \"placed_date\": \"2026-09-20\",\n  \"dispatch_state\": \"not_dispatched\",\n  \"dispatched_date\": null,\n  \"delivered_date\": null,\n  \"expected_delivery_date\": \"2026-09-26\",\n  \"status\": \"active\",\n  \"refund\": null\n}",
+    "policy_docs": [
+      "cancellations_and_order_changes.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Your order 47787 has not dispatched, so it can be cancelled free of charge. The cancellation request will be sent to the warehouse queue straight away.\n\nAs the full order total is £175, the refund requires senior-team review because it is over £100. If approved, it will be returned to the original payment method within 5 working days of approval.",
+    "generated_at": "2026-09-21T16:24:15+00:00"
+  },
+  {
+    "id": "hl-0117",
+    "split": "test",
+    "ticket_text": "can I swap something of order 50292?",
+    "intent": "order_management",
+    "urgency": "high",
+    "confidence": 0.96,
+    "escalation_reasons": [],
+    "rationale": "This asks to swap an item in a live order, which needs action before dispatch; no escalation trigger is present.",
+    "handled_by": "self",
+    "order_facts": "Order 50292 (verified database record):\n{\n  \"order_id\": \"50292\",\n  \"customer_name\": \"L. Fenwick\",\n  \"items\": [\n    {\n      \"name\": \"Amberley wool cushion, pair\",\n      \"unit_price_gbp\": 54.0,\n      \"qty\": 1\n    },\n    {\n      \"name\": \"Amberley wool throw\",\n      \"unit_price_gbp\": 62.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 116.0,\n  \"delivery_option\": \"standard\",\n  \"placed_date\": \"2026-09-18\",\n  \"dispatch_state\": \"not_dispatched\",\n  \"dispatched_date\": null,\n  \"delivered_date\": null,\n  \"expected_delivery_date\": \"2026-09-24\",\n  \"status\": \"active\",\n  \"refund\": null\n}",
+    "policy_docs": [
+      "cancellations_and_order_changes.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Yes — order 50292 has not dispatched, so an item can be swapped free of charge. Please tell us which item you’d like to swap and what you’d like instead, and we’ll pass the change to the warehouse straight away.",
+    "generated_at": "2026-09-21T16:24:30+00:00"
+  },
+  {
+    "id": "hl-0127",
+    "split": "dev",
+    "ticket_text": "First of all the linen cushions are gorgeous, genuinely the nicest thing in the room. Second, less gorgeous, the matching bolster never arrived. Order 50118. Any idea where it is?",
+    "intent": "delivery_and_shipping",
+    "urgency": "normal",
+    "confidence": 0.99,
+    "escalation_reasons": [],
+    "rationale": "The customer is asking for the location of a missing ordered item; no escalation trigger is present.",
+    "handled_by": "self",
+    "order_facts": "Order 50118 (verified database record):\n{\n  \"order_id\": \"50118\",\n  \"customer_name\": \"A. Petrova\",\n  \"items\": [\n    {\n      \"name\": \"Linen cushion, set of 2\",\n      \"unit_price_gbp\": 38.0,\n      \"qty\": 1\n    },\n    {\n      \"name\": \"Linen bolster cushion\",\n      \"unit_price_gbp\": 22.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 60.0,\n  \"delivery_option\": \"standard\",\n  \"placed_date\": \"2026-09-08\",\n  \"dispatch_state\": \"delivered\",\n  \"dispatched_date\": \"2026-09-11\",\n  \"delivered_date\": \"2026-09-13\",\n  \"expected_delivery_date\": \"2026-09-13\",\n  \"status\": \"active\",\n  \"refund\": null,\n  \"note\": \"Bolster cushion short-shipped: courier confirms only one parcel (cushions) was picked up from the warehouse; the bolster's line was never dispatched.\"\n}",
+    "policy_docs": [
+      "delivery_and_shipping.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "I’m glad you love the linen cushions. I can see the bolster cushion was not dispatched: only the parcel containing the cushion set left the warehouse. This is a short-shipment, so the missing bolster should be sent out rather than treated as a lost delivery.\n\nWe’ll arrange for the warehouse to dispatch the missing bolster cushion. If a refund is needed instead, the £22 refund would not require senior review; any approved refund would return to your original payment method within 5 working days of approval.",
+    "generated_at": "2026-09-21T16:24:15+00:00"
+  },
+  {
+    "id": "hl-0140",
+    "split": "dev",
+    "ticket_text": "i need help removing several items from order 51057",
+    "intent": "order_management",
+    "urgency": "high",
+    "confidence": 0.98,
+    "escalation_reasons": [],
+    "rationale": "This is a requested removal of items from a presumed live order, which must be handled before dispatch; no escalation trigger is present.",
+    "handled_by": "self",
+    "order_facts": "Order 51057 (verified database record):\n{\n  \"order_id\": \"51057\",\n  \"customer_name\": \"G. Vance\",\n  \"items\": [\n    {\n      \"name\": \"Thornbury sideboard\",\n      \"unit_price_gbp\": 410.0,\n      \"qty\": 1\n    },\n    {\n      \"name\": \"Thornbury coffee table\",\n      \"unit_price_gbp\": 165.0,\n      \"qty\": 1\n    },\n    {\n      \"name\": \"Thornbury console table\",\n      \"unit_price_gbp\": 140.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 715.0,\n  \"delivery_option\": \"two_person\",\n  \"placed_date\": \"2026-09-19\",\n  \"dispatch_state\": \"not_dispatched\",\n  \"dispatched_date\": null,\n  \"delivered_date\": null,\n  \"expected_delivery_date\": \"2026-09-29\",\n  \"status\": \"active\",\n  \"refund\": null\n}",
+    "policy_docs": [
+      "cancellations_and_order_changes.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Your order has not dispatched, so items can be removed free of charge. Please tell us which items you would like removed from order 51057:\n\n- Thornbury sideboard\n- Thornbury coffee table\n- Thornbury console table\n\nAny difference will be refunded to your original payment method. Removing all three would involve a £715 refund, and any refund over £100 requires senior review before it can be processed. Approved refunds are returned within 5 working days of approval.",
+    "generated_at": "2026-09-21T16:24:15+00:00"
+  },
+  {
+    "id": "hl-0145",
+    "split": "test",
+    "ticket_text": "This is the third time I've had to email about order 47156. Nobody has replied to either of my previous messages. I'm getting really tired of this. Where is my delivery?",
+    "intent": "delivery_and_shipping",
+    "urgency": "normal",
+    "confidence": 0.98,
+    "escalation_reasons": [],
+    "rationale": "The customer is asking for the status of a delivery; repeated unanswered emails show frustration but do not meet the escalation threshold for severe customer anger.",
+    "handled_by": "self",
+    "order_facts": "Order 47156 (verified database record):\n{\n  \"order_id\": \"47156\",\n  \"customer_name\": \"D. Okonkwo\",\n  \"items\": [\n    {\n      \"name\": \"Wren pendant light\",\n      \"unit_price_gbp\": 72.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 72.0,\n  \"delivery_option\": \"standard\",\n  \"placed_date\": \"2026-09-05\",\n  \"dispatch_state\": \"dispatched\",\n  \"dispatched_date\": \"2026-09-08\",\n  \"delivered_date\": null,\n  \"expected_delivery_date\": \"2026-09-12\",\n  \"status\": \"active\",\n  \"refund\": null,\n  \"note\": \"Past its expected delivery date by more than a week with no delivered_date; courier tracking has not updated since dispatch.\"\n}",
+    "policy_docs": [
+      "delivery_and_shipping.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "I’m sorry you’ve had to chase this repeatedly. Order 47156 was dispatched on 8 September but has not been marked as delivered, and it is now well past its expected delivery date of 12 September. As the courier tracking has not updated since dispatch, the parcel should be treated as lost rather than delayed.\n\nA replacement or refund will need to be arranged by the support team. If a replacement is agreed, or the parcel is confirmed lost, the delivery charge will be refunded separately within 5 working days of approval. Any refund for the £72 item would not require senior review, as it is not over £100; approved refunds return to the original payment method within 5 working days of approval.\n\nI’m sorry again for the lack of response and the delay.",
+    "generated_at": "2026-09-21T16:24:30+00:00"
+  },
+  {
+    "id": "hl-0159",
+    "split": "dev",
+    "ticket_text": "Hello, I'd like a refund on the Ashford wool rug, order 51877. It was £95 including delivery. It's unused and still in the original wrapping.",
+    "intent": "returns_and_refunds",
+    "urgency": "normal",
+    "confidence": 0.99,
+    "escalation_reasons": [],
+    "rationale": "This is a standard return/refund request for an unused £95 item, below the stated escalation threshold.",
+    "handled_by": "self",
+    "order_facts": "Order 51877 (verified database record):\n{\n  \"order_id\": \"51877\",\n  \"customer_name\": \"Chidi Umeh\",\n  \"items\": [\n    {\n      \"name\": \"Ashford wool rug\",\n      \"unit_price_gbp\": 95.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 95.0,\n  \"delivery_option\": \"standard\",\n  \"placed_date\": \"2026-09-01\",\n  \"dispatch_state\": \"delivered\",\n  \"dispatched_date\": \"2026-09-03\",\n  \"delivered_date\": \"2026-09-06\",\n  \"expected_delivery_date\": \"2026-09-06\",\n  \"status\": \"active\",\n  \"refund\": null\n}",
+    "policy_docs": [
+      "returns_and_refunds.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Hello Chidi,\n\nYour Ashford wool rug was delivered on 6 September. As it is unused and in its original wrapping, it can be returned for a change-of-mind refund within 30 days of delivery.\n\nThe refund would be £95 to the original payment method once the return is received and checked by the warehouse. It is not over £100, so it does not need senior review. Approved refunds are returned within 5 working days of approval.\n\nPlease let us know if you would like to start the return.",
+    "generated_at": "2026-09-21T16:24:15+00:00"
+  },
+  {
+    "id": "hl-0161",
+    "split": "dev",
+    "ticket_text": "cancelling order 52507",
+    "intent": "order_management",
+    "urgency": "high",
+    "confidence": 0.99,
+    "escalation_reasons": [],
+    "rationale": "This is a request to cancel a live order, which is time-sensitive before dispatch; no escalation trigger is present.",
+    "handled_by": "self",
+    "order_facts": "Order 52507 (verified database record):\n{\n  \"order_id\": \"52507\",\n  \"customer_name\": \"M. Blackwood\",\n  \"items\": [\n    {\n      \"name\": \"Elden console table\",\n      \"unit_price_gbp\": 210.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 210.0,\n  \"delivery_option\": \"two_person\",\n  \"placed_date\": \"2026-09-20\",\n  \"dispatch_state\": \"not_dispatched\",\n  \"dispatched_date\": null,\n  \"delivered_date\": null,\n  \"expected_delivery_date\": \"2026-09-28\",\n  \"status\": \"active\",\n  \"refund\": null\n}",
+    "policy_docs": [
+      "cancellations_and_order_changes.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Your order 52507 has not dispatched, so it can be cancelled free of charge. The cancellation request will be passed to the warehouse queue immediately.\n\nAs the order total is £210, the refund requires review by a senior member of the support team before it is processed. Once approved, it will be returned to your original payment method within 5 working days.",
+    "generated_at": "2026-09-21T16:24:15+00:00"
+  },
+  {
+    "id": "hl-0190",
+    "split": "test",
+    "ticket_text": "Further to my previous correspondence of 2 September, I have instructed a solicitor regarding the damaged sideboard supplied under order 47338 and the subsequent refusal to collect it. Please direct all further communication to them; details below.",
+    "intent": "product_issue",
+    "urgency": "normal",
+    "confidence": 0.98,
+    "escalation_reasons": [
+      "legal_or_chargeback_threat"
+    ],
+    "rationale": "The ticket concerns a damaged supplied item, and escalation is required because the customer has instructed a solicitor.",
+    "handled_by": "human",
+    "order_facts": "Order 47338 (verified database record):\n{\n  \"order_id\": \"47338\",\n  \"customer_name\": \"Solicitor-represented; see file note\",\n  \"items\": [\n    {\n      \"name\": \"Thornbury sideboard\",\n      \"unit_price_gbp\": 410.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 410.0,\n  \"delivery_option\": \"two_person\",\n  \"placed_date\": \"2026-08-01\",\n  \"dispatch_state\": \"delivered\",\n  \"dispatched_date\": \"2026-08-05\",\n  \"delivered_date\": \"2026-08-08\",\n  \"expected_delivery_date\": \"2026-08-08\",\n  \"status\": \"return_requested\",\n  \"refund\": null,\n  \"note\": \"Damage reported 2026-08-25. A prior collection was booked and refused by the courier as the item was not adequately packaged for return; customer's solicitor engaged 2 September following the refusal. No refund has been processed.\"\n}",
+    "policy_docs": [
+      "product_safety.md",
+      "returns_and_refunds.md"
+    ],
+    "handover_note": "Escalated to a person due to the customer’s stated legal/solicitor involvement.\n\nOrder 47338 is verified: one Thornbury sideboard, delivered by two-person service on 8 August 2026. The order is currently marked return requested. Damage was reported on 25 August; the record notes that a collection was booked but refused by the courier because the item was not adequately packaged for return. No refund has been processed. The customer says they have instructed a solicitor and asks that further communication be directed to them.\n\nUrgency: this is an ordinary legal-escalation matter, not a safety issue. It should be handled by a person, but the customer’s formal tone does not itself make it high urgency.\n\nNo immediate safety instruction is indicated by the available information.",
+    "suggested_reply": "Thank you for providing this. We will ensure the matter is passed to the appropriate team for handling with your solicitor. Please ask them to contact us directly, quoting order 47338 and providing their authority to act and contact details.\n\nThe sideboard was reported damaged, so Hearth & Loom should arrange and pay for collection; no restocking or collection fee applies. As the item value is £410, any refund, replacement or compensation would require senior-team review before it can be processed. If a refund is approved, it will be returned to the original payment method within 5 working days of approval.",
+    "generated_at": "2026-09-21T16:24:33+00:00"
+  },
+  {
+    "id": "hl-0222",
+    "split": "test",
+    "ticket_text": "I want to send back the dining table from order 48219, it's not the colour I expected from the photos. How do I arrange a refund?",
+    "intent": "returns_and_refunds",
+    "urgency": "normal",
+    "confidence": 0.98,
+    "escalation_reasons": [],
+    "rationale": "The customer is requesting a return and refund for a table whose colour did not meet expectations; no stated refund amount exceeds £100 and no other escalation trigger appears.",
+    "handled_by": "self",
+    "order_facts": "Order 48219 (verified database record):\n{\n  \"order_id\": \"48219\",\n  \"customer_name\": \"N. Alavi\",\n  \"items\": [\n    {\n      \"name\": \"Hollis dining table\",\n      \"unit_price_gbp\": 340.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 340.0,\n  \"delivery_option\": \"two_person\",\n  \"placed_date\": \"2026-08-20\",\n  \"dispatch_state\": \"delivered\",\n  \"dispatched_date\": \"2026-08-27\",\n  \"delivered_date\": \"2026-09-01\",\n  \"expected_delivery_date\": \"2026-09-01\",\n  \"status\": \"active\",\n  \"refund\": null,\n  \"note\": \"Ordered in 'Ash' finish; delivery note on file records the item shipped as photographed and confirmed at checkout, in 'Ash'.\"\n}",
+    "policy_docs": [
+      "returns_and_refunds.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "You can request a change-of-mind return for the Hollis dining table. As it was delivered by two-person service, the return window is 14 days from delivery, provided it is unused and in its original packaging.\n\nA two-person collection will need to be arranged. Please note that a 15% restocking fee applies to change-of-mind returns of large furniture; this would be deducted from the refund. The table was delivered on 1 September, and the order record confirms the Ash finish was supplied as ordered.\n\nThe item price is £340, so the refund is over £100 and will need senior-team review before processing. Once approved, any refund is returned to the original payment method within 5 working days.",
+    "generated_at": "2026-09-21T16:24:33+00:00"
+  },
+  {
+    "id": "hl-0227",
+    "split": "dev",
+    "ticket_text": "I made a mistake, I need to correct order 50064",
+    "intent": "order_management",
+    "urgency": "high",
+    "confidence": 0.98,
+    "escalation_reasons": [],
+    "rationale": "This requests a correction to a presumed live order before dispatch, creating a time-sensitive order-management need; no escalation trigger is stated.",
+    "handled_by": "self",
+    "order_facts": "Order 50064 (verified database record):\n{\n  \"order_id\": \"50064\",\n  \"customer_name\": \"F. Tremblay\",\n  \"items\": [\n    {\n      \"name\": \"Corfe outdoor lounge chair\",\n      \"unit_price_gbp\": 149.0,\n      \"qty\": 2\n    }\n  ],\n  \"order_total_gbp\": 298.0,\n  \"delivery_option\": \"two_person\",\n  \"placed_date\": \"2026-09-19\",\n  \"dispatch_state\": \"not_dispatched\",\n  \"dispatched_date\": null,\n  \"delivered_date\": null,\n  \"expected_delivery_date\": \"2026-09-27\",\n  \"status\": \"active\",\n  \"refund\": null\n}",
+    "policy_docs": [
+      "cancellations_and_order_changes.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Your order 50064 has not dispatched, so it can still be corrected free of charge. Please tell us what you need to change—for example, the quantity, item, or delivery address—and we’ll pass the request to the warehouse queue straight away.",
+    "generated_at": "2026-09-21T16:24:15+00:00"
+  },
+  {
+    "id": "hl-0233",
+    "split": "dev",
+    "ticket_text": "I've asked four times for the refund on order 49001 and had nothing. If it isn't in my account by Friday I'm raising a chargeback with my bank and reporting you to Trading Standards.",
+    "intent": "returns_and_refunds",
+    "urgency": "normal",
+    "confidence": 0.99,
+    "escalation_reasons": [
+      "legal_or_chargeback_threat"
+    ],
+    "rationale": "This is a chase for an already-owed refund, and the explicit threat of a bank chargeback and report to Trading Standards requires escalation.",
+    "handled_by": "human",
+    "order_facts": "Order 49001 (verified database record):\n{\n  \"order_id\": \"49001\",\n  \"customer_name\": \"S. Achebe\",\n  \"items\": [\n    {\n      \"name\": \"Oakhurst dining chairs, set of 4\",\n      \"unit_price_gbp\": 320.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 320.0,\n  \"delivery_option\": \"standard\",\n  \"placed_date\": \"2026-07-20\",\n  \"dispatch_state\": \"delivered\",\n  \"dispatched_date\": \"2026-07-24\",\n  \"delivered_date\": \"2026-07-27\",\n  \"expected_delivery_date\": \"2026-07-27\",\n  \"status\": \"return_requested\",\n  \"refund\": {\n    \"requested_gbp\": 320.0,\n    \"requested_date\": \"2026-08-20\",\n    \"status\": \"approved_awaiting_payout\",\n    \"resolved_date\": null,\n    \"note\": \"Refund approved 2026-08-24, not yet paid out. Four contacts on file since, most recently 2026-09-19.\"\n  }\n}",
+    "policy_docs": [
+      "returns_and_refunds.md"
+    ],
+    "handover_note": "Escalated to a person due to the customer’s chargeback and Trading Standards threat.\n\nOrder 49001 is verified for S. Achebe: Oakhurst dining chairs, set of 4, order total £320. The order was delivered on 2026-07-27. A £320 refund was requested on 2026-08-20 and approved on 2026-08-24, but the record shows it is still awaiting payout. There have been four contacts since approval, most recently on 2026-09-19.\n\nUrgency: routine refund chase escalated because of the stated legal/chargeback threat. The refund amount is over £100, so it requires senior review.",
+    "suggested_reply": "I’m sorry you’ve had to chase this repeatedly. Our record shows the £320 refund for order 49001 was approved on 24 August but has not yet been paid out.\n\nApproved refunds should return to the original payment method within 5 working days of approval, so this is overdue. As the refund is over £100, it requires senior-team review before payment is processed. Your chargeback and Trading Standards concerns will be included in that review.",
+    "generated_at": "2026-09-21T16:24:18+00:00"
+  },
+  {
+    "id": "hl-0236",
+    "split": "test",
+    "ticket_text": "Hi, three things really. The refund for the Ashford throw (order 51204) still hasn't landed and it's been two weeks. Also I've moved so can you update my address to 14 Bellweather Rise, Leeds LS8 2QR for anything still coming. And please stop the marketing emails, I get about four a week. Thanks, Marta",
+    "intent": "delivery_and_shipping",
+    "urgency": "high",
+    "confidence": 0.84,
+    "escalation_reasons": [],
+    "rationale": "The address update for any outstanding deliveries is time-sensitive and should be handled before dispatch; no escalation trigger is present.",
+    "handled_by": "self",
+    "order_facts": "Order 51204 (verified database record):\n{\n  \"order_id\": \"51204\",\n  \"customer_name\": \"Marta Novak\",\n  \"items\": [\n    {\n      \"name\": \"Ashford throw\",\n      \"unit_price_gbp\": 42.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 42.0,\n  \"delivery_option\": \"standard\",\n  \"placed_date\": \"2026-08-20\",\n  \"dispatch_state\": \"delivered\",\n  \"dispatched_date\": \"2026-08-23\",\n  \"delivered_date\": \"2026-08-25\",\n  \"expected_delivery_date\": \"2026-08-25\",\n  \"status\": \"return_requested\",\n  \"refund\": {\n    \"requested_gbp\": 42.0,\n    \"requested_date\": \"2026-09-07\",\n    \"status\": \"approved_awaiting_payout\",\n    \"resolved_date\": null,\n    \"note\": \"Refund approved 2026-09-09; not yet paid out, now two weeks since the customer's request.\"\n  }\n}",
+    "policy_docs": [
+      "delivery_and_shipping.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Hi Marta,\n\nThe £42 refund for the Ashford throw was approved on 9 September and is still awaiting payout. As it has not been paid within 5 working days of approval, this needs to be chased with the team. It will be returned to your original payment method. As the refund is under £100, it does not need senior review.\n\nOrder 51204 has already been delivered, so there is nothing still coming on this order to update. For any future orders, you can update your saved address in your account settings; support can also update it on request.\n\nYou can stop marketing emails in your account settings under marketing preferences. If you would like support to make that change, please confirm and the team can do so.\n\nBest,\nHearth & Loom",
+    "generated_at": "2026-09-21T16:24:33+00:00"
+  },
+  {
+    "id": "hl-0242",
+    "split": "dev",
+    "ticket_text": "The glass shade on the pendant light we fitted last week shattered while my husband was changing the bulb. He's cut his hand quite badly, we've been to A&E. Order 46902. I want to know what you're going to do about this.",
+    "intent": "product_issue",
+    "urgency": "high",
+    "confidence": 0.99,
+    "escalation_reasons": [
+      "product_safety"
+    ],
+    "rationale": "This reports a shattered glass light shade that caused a significant cut requiring A&E, so it is a product-safety escalation; the requested remedy is unspecified.",
+    "handled_by": "human",
+    "order_facts": "Order 46902 (verified database record):\n{\n  \"order_id\": \"46902\",\n  \"customer_name\": \"R. Sandhu\",\n  \"items\": [\n    {\n      \"name\": \"Bramwell pendant light\",\n      \"unit_price_gbp\": 95.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 95.0,\n  \"delivery_option\": \"standard\",\n  \"placed_date\": \"2026-09-08\",\n  \"dispatch_state\": \"delivered\",\n  \"dispatched_date\": \"2026-09-10\",\n  \"delivered_date\": \"2026-09-13\",\n  \"expected_delivery_date\": \"2026-09-13\",\n  \"status\": \"active\",\n  \"refund\": null\n}",
+    "policy_docs": [
+      "product_safety.md",
+      "returns_and_refunds.md"
+    ],
+    "handover_note": "This has been escalated to a person because it is a product-safety report involving shattered glass and an injury requiring A&E treatment.\n\nThe ticket concerns Order 46902 for one Bramwell pendant light (£95), delivered on 13 September 2026. The customer reports that the glass shade shattered while a bulb was being changed, cutting their husband’s hand.\n\nUrgency: high. This is a safety issue with physical injury, regardless of the customer’s tone.\n\nImmediate instruction to convey: stop using the light and do not attempt to repair it or return the shattered shade through a normal parcel if it is unsafe to handle.",
+    "suggested_reply": "I’m very sorry to hear your husband has been injured. Please stop using the pendant light and do not try to repair it or send the shattered shade back through a normal parcel.\n\nI’ve flagged this as a product-safety report for urgent review by a member of our team, who will assess the incident and contact you about the next steps. Order 46902 shows a Bramwell pendant light delivered on 13 September 2026.\n\nPlease keep the item and any pieces safely aside if you can do so without risk, along with any photos or medical information you are comfortable sharing. Your husband’s wellbeing comes first.",
+    "generated_at": "2026-09-21T16:24:22+00:00"
+  },
+  {
+    "id": "hl-a0001",
+    "split": "dev",
+    "ticket_text": "I returned the pendant light from order 53001, it cost £100 exactly, when will I get refunded?",
+    "intent": "returns_and_refunds",
+    "urgency": "normal",
+    "confidence": 0.99,
+    "escalation_reasons": [],
+    "rationale": "The customer is chasing a refund for an already returned item; the stated £100 amount does not exceed the £100 escalation threshold.",
+    "handled_by": "self",
+    "order_facts": "Order 53001 (verified database record):\n{\n  \"order_id\": \"53001\",\n  \"customer_name\": \"H. Voss\",\n  \"items\": [\n    {\n      \"name\": \"Bramwell pendant light\",\n      \"unit_price_gbp\": 100.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 100.0,\n  \"delivery_option\": \"standard\",\n  \"placed_date\": \"2026-09-01\",\n  \"dispatch_state\": \"delivered\",\n  \"dispatched_date\": \"2026-09-03\",\n  \"delivered_date\": \"2026-09-06\",\n  \"expected_delivery_date\": \"2026-09-06\",\n  \"status\": \"return_requested\",\n  \"refund\": {\n    \"requested_gbp\": 100.0,\n    \"requested_date\": \"2026-09-19\",\n    \"status\": \"processing\",\n    \"resolved_date\": null,\n    \"note\": \"Refund of exactly \\u00a3100 requested; below the >\\u00a3100 escalation threshold in brief v3 \\u00a75.\"\n  }\n}",
+    "policy_docs": [
+      "returns_and_refunds.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Thanks for returning the Bramwell pendant light from order 53001. Your £100 refund is currently processing. As it is exactly £100, it does not need senior review.\n\nOnce approved, the refund will be returned to your original payment method within 5 working days. For a change-of-mind return, approval happens after the item has been received and checked by the warehouse.",
+    "generated_at": "2026-09-21T16:24:22+00:00"
+  },
+  {
+    "id": "hl-a0002",
+    "split": "test",
+    "ticket_text": "I'd like a £100.01 refund please, my order arrived faulty.",
+    "intent": "product_issue",
+    "urgency": "normal",
+    "confidence": 0.99,
+    "escalation_reasons": [
+      "refund_over_threshold"
+    ],
+    "rationale": "The order arrived faulty, making this a product issue; the explicitly requested £100.01 refund exceeds the £100 escalation threshold.",
+    "handled_by": "human",
+    "order_facts": "No order number was mentioned in this ticket.",
+    "policy_docs": [
+      "product_safety.md",
+      "returns_and_refunds.md"
+    ],
+    "handover_note": "Escalated to a person because the requested refund is over £100 and requires senior review.\n\nThe customer says their order arrived faulty and requests a £100.01 refund. No order number was mentioned, so no order facts are available to verify the order or item.\n\nUrgency: routine. This is a faulty-item/refund request, but no safety hazard or time-critical consequence has been reported.",
+    "suggested_reply": "I’m sorry your order arrived faulty. I can’t locate the order from this message, as no order number was included. Please send your order number and a brief description or photos of the fault so the team can review it.\n\nFaulty items are eligible for a return or collection at no cost, and no restocking fee applies. A £100.01 refund is over £100, so it will need senior-team review before it can be processed. If approved, the refund is returned to the original payment method within 5 working days of approval.",
+    "generated_at": "2026-09-21T16:24:36+00:00"
+  },
+  {
+    "id": "hl-a0003",
+    "split": "dev",
+    "ticket_text": "How many working days does it take to get my refund back once it's been approved?",
+    "intent": "returns_and_refunds",
+    "urgency": "low",
+    "confidence": 0.99,
+    "escalation_reasons": [],
+    "rationale": "This is an informational question about the timing of an approved refund, with no escalation trigger.",
+    "handled_by": "self",
+    "order_facts": "No order number was mentioned in this ticket.",
+    "policy_docs": [
+      "returns_and_refunds.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Once approved, refunds are returned to the original payment method within 5 working days. No refund amount is being discussed here, so no senior-review threshold applies.",
+    "generated_at": "2026-09-21T16:24:22+00:00"
+  },
+  {
+    "id": "hl-a0004",
+    "split": "test",
+    "ticket_text": "What's happening with my order 53004? It's been ages.",
+    "intent": "delivery_and_shipping",
+    "urgency": "normal",
+    "confidence": 0.98,
+    "escalation_reasons": [],
+    "rationale": "The customer is asking for an overdue-order status update; no escalation trigger is present.",
+    "handled_by": "self",
+    "order_facts": "Order 53004: no matching order record found in the database.",
+    "policy_docs": [
+      "delivery_and_shipping.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "I can’t find an order record for 53004. Please check the order number in your confirmation email and send it over, along with the email address used at checkout, and we’ll look into the delivery status.",
+    "generated_at": "2026-09-21T16:24:36+00:00"
+  },
+  {
+    "id": "hl-a0005",
+    "split": "dev",
+    "ticket_text": "Can you change the delivery address on order 53002? I've moved house.",
+    "intent": "delivery_and_shipping",
+    "urgency": "high",
+    "confidence": 0.99,
+    "escalation_reasons": [],
+    "rationale": "This requests changing the delivery address for a live order before dispatch, making it time-sensitive; no escalation trigger is present.",
+    "handled_by": "self",
+    "order_facts": "Order 53002 (verified database record):\n{\n  \"order_id\": \"53002\",\n  \"customer_name\": \"A. Delgado\",\n  \"items\": [\n    {\n      \"name\": \"Elden console table\",\n      \"unit_price_gbp\": 210.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 210.0,\n  \"delivery_option\": \"two_person\",\n  \"placed_date\": \"2026-09-16\",\n  \"dispatch_state\": \"dispatched\",\n  \"dispatched_date\": \"2026-09-19\",\n  \"delivered_date\": null,\n  \"expected_delivery_date\": \"2026-09-24\",\n  \"status\": \"active\",\n  \"refund\": null\n}",
+    "policy_docs": [
+      "delivery_and_shipping.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Order 53002 has already been dispatched, so we can’t change the delivery address from our side. Please contact the courier directly using your dispatch confirmation/tracking link to request a redirect. This isn’t guaranteed, and two-person deliveries generally can’t be redirected once a delivery slot has been booked.\n\nIf a redirect isn’t possible, you can refuse the delivery or arrange a return after delivery. As this is a large furniture item, a change-of-mind return may have a 15% restocking fee and return costs deducted from any refund.",
+    "generated_at": "2026-09-21T16:24:22+00:00"
+  },
+  {
+    "id": "hl-a0006",
+    "split": "test",
+    "ticket_text": "I cancelled order 53003 last week, did I get my refund yet?",
+    "intent": "returns_and_refunds",
+    "urgency": "normal",
+    "confidence": 0.99,
+    "escalation_reasons": [],
+    "rationale": "The customer is chasing the status of a refund for a previously cancelled order; no escalation trigger is present.",
+    "handled_by": "self",
+    "order_facts": "Order 53003 (verified database record):\n{\n  \"order_id\": \"53003\",\n  \"customer_name\": \"M. Okafor\",\n  \"items\": [\n    {\n      \"name\": \"Selby bookcase\",\n      \"unit_price_gbp\": 175.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 175.0,\n  \"delivery_option\": \"standard\",\n  \"placed_date\": \"2026-09-10\",\n  \"dispatch_state\": \"not_dispatched\",\n  \"dispatched_date\": null,\n  \"delivered_date\": null,\n  \"expected_delivery_date\": \"2026-09-16\",\n  \"status\": \"cancelled\",\n  \"refund\": {\n    \"requested_gbp\": 175.0,\n    \"requested_date\": \"2026-09-11\",\n    \"status\": \"paid\",\n    \"resolved_date\": \"2026-09-13\",\n    \"note\": \"Cancelled before dispatch at customer's request; refund paid in full.\"\n  }\n}",
+    "policy_docs": [
+      "returns_and_refunds.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Yes — order 53003 was cancelled before dispatch and the full £175 refund is recorded as paid on 13 September 2026, to the original payment method. As the refund is over £100, it required the senior-review process; the record shows it has been paid.",
+    "generated_at": "2026-09-21T16:24:36+00:00"
+  },
+  {
+    "id": "hl-a0007",
+    "split": "dev",
+    "ticket_text": "I want to return the bed frame I ordered last month, I've just gone off the colour. It's not damaged, and the confirmation email says two-person delivery.",
+    "intent": "returns_and_refunds",
+    "urgency": "normal",
+    "confidence": 0.98,
+    "escalation_reasons": [],
+    "rationale": "This is a non-fault return request for a bed frame due to a change of preference, with no stated refund amount or escalation trigger.",
+    "handled_by": "self",
+    "order_facts": "No order number was mentioned in this ticket.",
+    "policy_docs": [
+      "returns_and_refunds.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Thanks for getting in touch. I can help with this, but I’ll need your order number to check the delivery date and arrange the correct return route.\n\nAs this is a bed frame delivered by two-person service and the reason is a change of mind, the usual return window is 14 days from delivery. A 15% restocking fee of the item price applies to this type of return. If a return is accepted, the refund goes back to the original payment method within 5 working days of approval, after the item has been returned and checked.\n\nPlease send your order number and we’ll check the options available. Any refund over £100 requires senior-team review before it can be processed.",
+    "generated_at": "2026-09-21T16:24:22+00:00"
+  },
+  {
+    "id": "hl-a0008",
+    "split": "test",
+    "ticket_text": "My password still works fine, but there's an order in my account for a rug I never bought, and my saved address has been changed to somewhere in Manchester I don't recognise.",
+    "intent": "account_access",
+    "urgency": "high",
+    "confidence": 0.99,
+    "escalation_reasons": [
+      "account_security"
+    ],
+    "rationale": "The unrecognised order and unauthorised address change indicate active account misuse, requiring account-security escalation.",
+    "handled_by": "human",
+    "order_facts": "No order number was mentioned in this ticket.",
+    "policy_docs": [
+      "accounts.md"
+    ],
+    "handover_note": "This has been escalated to a person for suspected unauthorised account access (account security).\n\nThe customer says their password still works, but an unrecognised rug order appears in their account and their saved address has been changed to an unfamiliar Manchester address. No order number was provided, so no order record could be verified.\n\nUrgency: treat as an account-security issue requiring human investigation. The customer’s ability to log in does not reduce the concern, as both an unrecognised order and unauthorised address change are signs the account may be compromised.",
+    "suggested_reply": "I’m sorry — an order you don’t recognise and an unfamiliar saved address suggest possible unauthorised access to your account. We’ll need a member of our team to investigate this rather than treating it as a normal password-reset issue.\n\nPlease do not make any changes to the order or address for now. Reply with the order number, if you can see it, and the email address on the account so the team can investigate.",
+    "generated_at": "2026-09-21T16:24:39+00:00"
+  },
+  {
+    "id": "hl-a0009",
+    "split": "dev",
+    "ticket_text": "This is an absolute joke, you people are fucking useless, three weeks for a £25 cushion cover and nobody replies. I am done with this company, cancel everything and I'm never ordering again.",
+    "intent": "order_management",
+    "urgency": "high",
+    "confidence": 0.98,
+    "escalation_reasons": [
+      "severe_customer_anger"
+    ],
+    "rationale": "The customer asks to cancel all live orders before dispatch, and escalation is required due to profanity directed at staff and an explicit statement that they are done with the company.",
+    "handled_by": "human",
+    "order_facts": "No order number was mentioned in this ticket.",
+    "policy_docs": [
+      "cancellations_and_order_changes.md"
+    ],
+    "handover_note": "This has been escalated to a person because of severe customer anger.\n\nThe customer is complaining about an alleged three-week wait for a cushion cover and asks to “cancel everything.” No order number was provided, so no order record or dispatch status is available to confirm what can be cancelled.\n\nUrgency: this is not urgent on the information available. The escalation is due to the customer’s anger, not a stated safety issue or verified time-critical consequence.\n\nNo immediate safety instruction is applicable.",
+    "suggested_reply": "I’m sorry you’ve had such a frustrating experience. I can’t locate or cancel an order without an order number, and none was included in your message.\n\nPlease reply with the order number you want cancelled. If it has not yet dispatched, we can send the cancellation request to the warehouse straight away; cancellation is free of charge. If it has already dispatched, we’ll explain the return options.",
+    "generated_at": "2026-09-21T16:24:25+00:00"
+  },
+  {
+    "id": "hl-a0010",
+    "split": "test",
+    "ticket_text": "Hi, do you do work placements? I run a small events company and wanted to ask about featuring your products, and also are you hiring for warehouse roles in Leeds?",
+    "intent": "out_of_scope",
+    "urgency": "low",
+    "confidence": 0.98,
+    "escalation_reasons": [
+      "out_of_scope"
+    ],
+    "rationale": "This is a business partnership and recruitment enquiry rather than a customer support request, so it is out of scope and requires escalation.",
+    "handled_by": "human",
+    "order_facts": "No order number was mentioned in this ticket.",
+    "policy_docs": [],
+    "handover_note": "This has been escalated to a person because the enquiry is out of scope for customer-order support.\n\nThe customer is asking about work placements, potential product featuring through their events company, and warehouse vacancies in Leeds. No order number was mentioned and there are no order facts to review.\n\nUrgency: routine. There is no safety issue, live-order deadline, or other time-critical consequence indicated.\n\nNo immediate safety instruction applies.",
+    "suggested_reply": "Hi, thanks for getting in touch. We don’t have information available here about work placements, product features or current warehouse vacancies in Leeds. Please check our careers page for advertised roles and contact our business or partnerships team through the details on our website about featuring products at your events.",
+    "generated_at": "2026-09-21T16:24:42+00:00"
+  },
+  {
+    "id": "hl-a0011",
+    "split": "dev",
+    "ticket_text": "Not urgent at all and I'm not asking for anything, but the plug on my bedside lamp got quite warm to the touch last night after a couple of hours on.",
+    "intent": "product_issue",
+    "urgency": "high",
+    "confidence": 0.98,
+    "escalation_reasons": [
+      "product_safety"
+    ],
+    "rationale": "The lamp plug becoming hot suggests a potential electrical safety hazard, which requires escalation and makes the ticket high urgency.",
+    "handled_by": "human",
+    "order_facts": "No order number was mentioned in this ticket.",
+    "policy_docs": [
+      "product_safety.md",
+      "returns_and_refunds.md"
+    ],
+    "handover_note": "This has been escalated to a person because it is a product-safety report.\n\nThe customer reports that the plug on a bedside lamp became quite warm after a couple of hours of use. No order number was provided, so no order details are available.\n\nUrgency is high: a warm plug may indicate an electrical safety risk, regardless of the customer saying it is not urgent or requesting nothing.\n\nAdvise the customer to stop using the lamp and unplug it. They should not attempt a repair.",
+    "suggested_reply": "Thanks for letting us know. Please stop using the lamp and unplug it; do not attempt to repair it.\n\nA plug becoming warm could be a safety issue, even if no one was injured and you are not requesting anything. I’m escalating your report to our product-safety team for a human review. If you can reply with your order number and, if possible, a photo of the plug and lamp label, that will help them investigate.",
+    "generated_at": "2026-09-21T16:24:27+00:00"
+  },
+  {
+    "id": "hl-a0012",
+    "split": "test",
+    "ticket_text": "The desk lamp from order 53005 arrived broken, I want £150 back for it please.",
+    "intent": "product_issue",
+    "urgency": "normal",
+    "confidence": 0.99,
+    "escalation_reasons": [
+      "refund_over_threshold"
+    ],
+    "rationale": "The customer reports an item arrived broken and requests a stated £150 refund, which exceeds the £100 escalation threshold.",
+    "handled_by": "human",
+    "order_facts": "Order 53005 (verified database record):\n{\n  \"order_id\": \"53005\",\n  \"customer_name\": \"F. Onwuka\",\n  \"items\": [\n    {\n      \"name\": \"Bramwell pendant light\",\n      \"unit_price_gbp\": 95.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 95.0,\n  \"delivery_option\": \"standard\",\n  \"placed_date\": \"2026-08-30\",\n  \"dispatch_state\": \"delivered\",\n  \"dispatched_date\": \"2026-09-01\",\n  \"delivered_date\": \"2026-09-04\",\n  \"expected_delivery_date\": \"2026-09-04\",\n  \"status\": \"active\",\n  \"refund\": null,\n  \"note\": \"Order record shows one Bramwell pendant light at \\u00a395; no desk lamp on this order.\"\n}",
+    "policy_docs": [
+      "product_safety.md",
+      "returns_and_refunds.md"
+    ],
+    "handover_note": "Escalated to a person because the router flagged a refund over the £100 threshold.\n\nThe customer says a desk lamp from order 53005 arrived broken and requests £150. Verified order 53005 was delivered on 4 September 2026 and contains one Bramwell pendant light priced at £95; it does not contain a desk lamp. No refund is recorded.\n\nUrgency: routine. This is a damaged-item/refund query, with no product-safety hazard described. The requested £150 would require senior review if it were applicable, but the verified order facts do not support that amount or item.",
+    "suggested_reply": "I’m sorry it arrived broken. Order 53005 shows one Bramwell pendant light at £95, not a desk lamp, so we can’t offer a £150 refund for this order.\n\nFor a damaged item, we can arrange the return or collection at no cost once the damage is confirmed; no restocking fee applies. Any refund would be for the item’s recorded value and returned to the original payment method within 5 working days of approval. As £95 is not over £100, it does not need senior review.\n\nPlease send photos of the damage so the team can confirm the issue.",
+    "generated_at": "2026-09-21T16:24:45+00:00"
+  },
+  {
+    "id": "hl-a0013",
+    "split": "dev",
+    "ticket_text": "Can I return both things from order 53006, the cushions and the throw? Neither is right for the room.",
+    "intent": "returns_and_refunds",
+    "urgency": "normal",
+    "confidence": 0.98,
+    "escalation_reasons": [],
+    "rationale": "The customer is requesting a routine return for items that are unsuitable, with no stated refund amount or other escalation trigger.",
+    "handled_by": "self",
+    "order_facts": "Order 53006 (verified database record):\n{\n  \"order_id\": \"53006\",\n  \"customer_name\": \"T. Whyte\",\n  \"items\": [\n    {\n      \"name\": \"Linen cushion, set of 2\",\n      \"unit_price_gbp\": 40.0,\n      \"qty\": 1\n    },\n    {\n      \"name\": \"Amberley wool throw\",\n      \"unit_price_gbp\": 50.0,\n      \"qty\": 1\n    }\n  ],\n  \"order_total_gbp\": 90.0,\n  \"delivery_option\": \"standard\",\n  \"placed_date\": \"2026-09-05\",\n  \"dispatch_state\": \"delivered\",\n  \"dispatched_date\": \"2026-09-08\",\n  \"delivered_date\": \"2026-09-11\",\n  \"expected_delivery_date\": \"2026-09-11\",\n  \"status\": \"active\",\n  \"refund\": null\n}",
+    "policy_docs": [
+      "returns_and_refunds.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Yes — you can return both the cushion set and the throw as a change-of-mind return, provided they are unused and in their original packaging. They were delivered on 11 September, so the standard 30-day return window applies.\n\nThere is no restocking fee for these standard-delivery items. The combined refund would be £90 and does not need senior review, as it is not over £100. Once the returned items have been received and checked, any approved refund will go back to your original payment method within 5 working days of approval.",
+    "generated_at": "2026-09-21T16:24:27+00:00"
+  },
+  {
+    "id": "hl-a0014",
+    "split": "test",
+    "ticket_text": "If I order today after 3pm with next-day delivery, will it definitely arrive tomorrow?",
+    "intent": "delivery_and_shipping",
+    "urgency": "low",
+    "confidence": 0.99,
+    "escalation_reasons": [],
+    "rationale": "This is an informational question about next-day delivery timing, with no escalation trigger.",
+    "handled_by": "self",
+    "order_facts": "No order number was mentioned in this ticket.",
+    "policy_docs": [
+      "delivery_and_shipping.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Not necessarily. Next-day orders placed after the 2pm cut-off dispatch on the following working day, so delivery would be the working day after that rather than tomorrow. If tomorrow is not a working day, it would take longer.",
+    "generated_at": "2026-09-21T16:24:45+00:00"
+  },
+  {
+    "id": "hl-a0015",
+    "split": "dev",
+    "ticket_text": "I had some curtains made to my window size, can I send them back, I've changed my mind?",
+    "intent": "returns_and_refunds",
+    "urgency": "normal",
+    "confidence": 0.97,
+    "escalation_reasons": [],
+    "rationale": "This is a return-policy question for made-to-measure curtains, with no stated refund amount, safety issue, or escalation trigger.",
+    "handled_by": "self",
+    "order_facts": "No order number was mentioned in this ticket.",
+    "policy_docs": [
+      "returns_and_refunds.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "Made-to-order or cut-to-size items, including bespoke curtains, aren’t eligible for return if you’ve simply changed your mind.\n\nIf there’s a fault or the curtains don’t match what was ordered, please send us your order number and details of the issue so we can look into it.",
+    "generated_at": "2026-09-21T16:24:27+00:00"
+  },
+  {
+    "id": "hl-a0016",
+    "split": "test",
+    "ticket_text": "Please delete my account. Also I don't want the dining table I ordered any more.",
+    "intent": "order_management",
+    "urgency": "high",
+    "confidence": 0.98,
+    "escalation_reasons": [],
+    "rationale": "The request to cancel a live dining-table order takes priority because it must be acted on before dispatch; no escalation trigger is present.",
+    "handled_by": "self",
+    "order_facts": "No order number was mentioned in this ticket.",
+    "policy_docs": [
+      "cancellations_and_order_changes.md"
+    ],
+    "handover_note": null,
+    "suggested_reply": "We can help with closing your account. Please confirm the email address registered to the account.\n\nI can’t locate or cancel the dining-table order without its order number. Please send that number so we can check whether it has dispatched. If it has not dispatched, it can be cancelled free of charge; if it has already dispatched, it would need to be returned instead.",
+    "generated_at": "2026-09-21T16:24:45+00:00"
+  }
+]

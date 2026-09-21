@@ -109,8 +109,23 @@ real customer — approving only records a decision. Phase 4 total spend: **$0.0
 (judge re-scoring + 11 draft-reply calls), project-to-date **$2.4486**. See `DECISIONS.md`
 D-025 and D-026.
 
-Deliberately *not* built: Phase 5 (integration and deployment). SQLite and Flask were
-chosen to make that step easy, not to pre-empt it.
+**Phase 5a in progress: two policy gaps closed, deployment configured, pending account
+creation only the client can do.** An understated or unstated refund claim can no longer
+self-handle its way past the £100 review once the order record is known (a second policy
+layer, `router.enforce_record_policy`, run in the answer pipeline after the order lookup
+that already happens there — the router itself still decides on ticket text alone, per
+brief v4 §5); D-024's open ground-rule-3 question is settled (it stays broad — the system
+has no execution capability at all, for any account action, order/money or otherwise).
+Zero eval tickets were affected (checked, not assumed) so no eval was re-run at cost beyond
+one $0.0319 judge re-score for an eval-criterion fix. `render.yaml` and the demo-mode
+seeding/reset code are ready for a public read-only-ish demo on Render's free tier (no
+credit card, ephemeral filesystem doubles as the reset mechanism, no `OPENAI_API_KEY` in
+its environment at all so it cannot spend API money even in principle); `make queue` is
+unaffected locally. See `DECISIONS.md` D-027 for the full account, including what's still
+pending: the client creating a Render account and connecting the repo.
+
+Deliberately *not* built yet: Phase 5b (the real inbox) and visual polish (Phase 6). SQLite
+and Flask were chosen to make deployment easy, not to pre-empt it.
 
 ## The rules this project runs on
 

@@ -33,10 +33,20 @@ from triage.queue_db import (
     list_packages,
     save_review,
     save_spot_check,
+    seed_if_empty,
     stats,
 )
 
+SEED_PATH = REPO_ROOT / "data" / "queue" / "seed_packages.json"
+
 app = Flask(__name__)
+
+# Seeds an empty `packages` table (a fresh demo deploy with no `make queue-data` run) once
+# per process. The public demo's actual reset is free and needs no code: Render's free-tier
+# filesystem is ephemeral, so every restart from a spin-down wipes reviews/spot_checks along
+# with everything else -- see DECISIONS.md D-027.
+with connect() as _conn:
+    seed_if_empty(_conn, SEED_PATH)
 
 
 def decide_status(action: str, reply_text: str, suggested_reply: str) -> tuple[str, str | None]:
@@ -68,7 +78,7 @@ textarea { width: 100%; font-family: inherit; font-size: 0.95rem; }
 button { padding: 0.5rem 1rem; margin-right: 0.5rem; cursor: pointer; }
 .diff { background: #fffbe6; border-left: 3px solid #e8b923; padding: 0.5rem 1rem; }
 </style></head><body>
-<nav><a href="/">Queue</a><a href="/spotcheck">Spot-check</a><a href="/stats">Stats</a></nav>
+<nav><a href="/">About</a><a href="/queue">Queue</a><a href="/spotcheck">Spot-check</a><a href="/stats">Stats</a></nav>
 <hr>
 {{ body|safe }}
 </body></html>
@@ -81,6 +91,48 @@ def render(body_template: str, **ctx) -> str:
 
 
 @app.route("/")
+def about():
+    with connect() as conn:
+        s = stats(conn)
+    return render(
+        """
+        <h1>Hearth &amp; Loom -- support-ticket triage, live demo</h1>
+        <p><b>Hearth &amp; Loom is a fictional UK homewares retailer</b> built for this
+        portfolio project. This page is a working demo of an LLM support-triage system:
+        given an incoming ticket, it decides what it's about, how urgent it is, and
+        whether a human must handle it -- then answers the routine ones from policy
+        documents and a mock orders database, and hands the risky or uncertain ones to a
+        human review queue.</p>
+
+        <div class="box">
+          <b>What you're looking at</b>
+          <p>{{ s.human_total }} tickets were escalated to a human and sit in the
+          <a href="/queue">review queue</a> with a suggested reply to approve, edit or
+          reject. {{ s.self_total }} more were answered automatically and are browsable,
+          read-only, in <a href="/spotcheck">spot-check</a>. <a href="/stats">Stats</a>
+          shows the running approve/edit/reject and flag rates.</p>
+        </div>
+
+        <div class="box">
+          <b>Nothing here is real</b>
+          <p>All tickets, orders and customers are synthetic. Approving, editing or
+          rejecting a draft only records a decision in this demo's own database --
+          nothing is ever sent to a real customer. This page makes no calls to any
+          language model: every reply and handover note you'll see was generated once,
+          offline, before this demo was deployed. This is a public, shared demo --
+          another visitor's edits may already be here, and this demo's own data
+          periodically resets.</p>
+        </div>
+
+        <p class="muted">Full write-up, decisions and evaluation numbers:
+        <a href="https://github.com/LeandHadergjonaj/llm-support-triage" target="_blank">the
+        project's GitHub repo</a>.</p>
+        """,
+        s=s,
+    )
+
+
+@app.route("/queue")
 def queue():
     with connect() as conn:
         packages = list_packages(conn, "human")

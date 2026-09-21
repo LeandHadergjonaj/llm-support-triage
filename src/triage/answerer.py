@@ -130,6 +130,13 @@ def extract_order_ids(text: str) -> list[str]:
     return seen
 
 
+def matched_orders(text: str) -> list[dict]:
+    """The actual order records (not the rendered text block) any order number in the
+    ticket resolves to -- for policy checks that need the data, not the prose."""
+    orders = load_orders()
+    return [orders[oid] for oid in extract_order_ids(text) if oid in orders]
+
+
 def order_facts_block(text: str) -> str:
     ids = extract_order_ids(text)
     if not ids:

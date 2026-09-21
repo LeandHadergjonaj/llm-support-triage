@@ -67,6 +67,15 @@ def generate_one(client, model: str, router_effort: str, answer_effort: str, bud
     except ValidationError as exc:
         raise RuntimeError(f"Unparseable router prediction for {ticket['id']}: {exc}") from exc
     pred, sent_to_human, notes = router_module.route(pred)
+
+    # The router decided on ticket text alone; now that the order record is being looked
+    # up anyway for the answer, catch an understated or unstated refund claim before it
+    # self-handles (D-027).
+    pred, forced = router_module.enforce_record_policy(pred, answerer.matched_orders(ticket["text"]))
+    if forced and not sent_to_human:
+        sent_to_human = True
+        notes.append("record_refund_over_threshold")
+
     handled_by = "human" if sent_to_human else "self"
     escalation_context = ", ".join(pred["escalation_reasons"])
 

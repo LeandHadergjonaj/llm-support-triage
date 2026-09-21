@@ -34,10 +34,11 @@ from triage.llm import (
     get_client,
     record_spend,
 )
-from triage.queue_db import connect, package_ids, upsert_package
+from triage.queue_db import connect, dump_packages, package_ids, upsert_package
 
 RESULTS = REPO_ROOT / "results"
 EVAL_DIR = REPO_ROOT / "data" / "eval"
+SEED_PATH = REPO_ROOT / "data" / "queue" / "seed_packages.json"
 
 # Static, zero-cost mapping from intent to the policy document(s) an agent should read
 # alongside this ticket. Six documents, eleven intents -- a lookup table, not a retrieval
@@ -137,6 +138,9 @@ def main() -> int:
                 pkg = build_package(ticket, candidate, split, suggested_reply)
                 upsert_package(conn, pkg)
                 print(f"  {tid} ({split}, {candidate['handled_by']})")
+
+        SEED_PATH.write_text(json.dumps(dump_packages(conn), indent=2, ensure_ascii=False))
+        print(f"Wrote {SEED_PATH} (public-demo seed, no reviews/spot-checks)")
 
     print(f"\n{n_new_calls} new suggested-reply calls on {args.model}.")
     if n_new_calls:

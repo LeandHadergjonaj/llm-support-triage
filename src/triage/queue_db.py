@@ -109,6 +109,32 @@ def package_ids(conn: sqlite3.Connection) -> set[str]:
     return {r["id"] for r in conn.execute("SELECT id FROM packages")}
 
 
+def dump_packages(conn: sqlite3.Connection) -> list[dict]:
+    """Every package, plain dicts -- for the public-demo seed fixture (Phase 5a). Reviews
+    and spot-checks are never dumped: a visitor's own decisions, not demo content."""
+    rows = conn.execute("SELECT * FROM packages ORDER BY id").fetchall()
+    return [_row_to_package(r) for r in rows]
+
+
+def seed_if_empty(conn: sqlite3.Connection, seed_path: Path) -> int:
+    """Load `seed_path` (a `dump_packages` export) when `packages` is empty -- a fresh
+    demo deployment with an ephemeral filesystem and no `make queue-data` run. A no-op
+    everywhere `make queue-data` has already populated the table. Returns rows loaded."""
+    if package_ids(conn) or not seed_path.exists():
+        return 0
+    packages = json.loads(seed_path.read_text())
+    for pkg in packages:
+        upsert_package(conn, pkg)
+    return len(packages)
+
+
+def reset_reviews(conn: sqlite3.Connection) -> None:
+    """Wipe visitor-entered state only -- packages (the demo content) are untouched. Used
+    by the public demo's periodic self-clean; see `queue_app.py`."""
+    conn.execute("DELETE FROM reviews")
+    conn.execute("DELETE FROM spot_checks")
+
+
 def get_package(conn: sqlite3.Connection, ticket_id: str) -> dict | None:
     row = conn.execute("SELECT * FROM packages WHERE id = ?", (ticket_id,)).fetchone()
     return _row_to_package(row) if row else None

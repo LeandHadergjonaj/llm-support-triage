@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: hearth-loom-triage-demo
+    runtime: python
+    plan: free
+    buildCommand: pip install .
+    startCommand: gunicorn -w 1 -b 0.0.0.0:$PORT triage.queue_app:app

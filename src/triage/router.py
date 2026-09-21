@@ -72,6 +72,31 @@ def enforce_policy(pred: dict) -> tuple[dict, list[str]]:
     return pred, notes
 
 
+RECORD_REFUND_THRESHOLD_GBP = 100.0
+
+
+def enforce_record_policy(pred: dict, order_records: list[dict]) -> tuple[dict, bool]:
+    """The router itself never sees the order record -- brief v4 §5 is explicit that
+    triage decides on the stated figure alone, since escalation happens before any lookup.
+    But the answering step *does* look the order up, and by then an understated or unstated
+    claim must not be allowed to slide a genuinely-over-threshold, still-open refund past a
+    human. Only an unresolved refund counts: one already paid needs no further review, and
+    reporting it as resolved is exactly what a self-handled reply should do. See
+    `DECISIONS.md` D-027."""
+    pred = dict(pred)
+    forced = False
+    for record in order_records:
+        refund = record.get("refund")
+        if not refund or refund.get("status") == "paid":
+            continue
+        if refund.get("requested_gbp", 0) > RECORD_REFUND_THRESHOLD_GBP:
+            if "refund_over_threshold" not in pred["escalation_reasons"]:
+                pred["escalation_reasons"] = [*pred["escalation_reasons"], "refund_over_threshold"]
+            pred["escalate"] = True
+            forced = True
+    return pred, forced
+
+
 def route(pred: dict, threshold: float = CONFIDENCE_THRESHOLD) -> tuple[dict, bool, list[str]]:
     """Apply the policy layer, then decide whether a human sees this ticket at all.
 

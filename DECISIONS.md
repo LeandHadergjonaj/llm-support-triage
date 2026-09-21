@@ -11,6 +11,120 @@ differently — not every implementation choice.
 
 ## 2026-09-21
 
+### D-027 — Phase 5a: close the understated-refund gap, settle D-024's ground-rule-3 scope, deploy a public demo
+
+**Part 1a: an understated or unstated refund claim must not slip past the £100 review once
+the record is known.** Brief v4 §5 is correct that the *router* must escalate on the stated
+figure alone — it never sees the order record (`hl-a0012`, D-025). But the *answering* step
+(`evaluate_answerer.py`) does look the order up for every ticket, whether the router kept
+it or not, and until now nothing used that fact for policy — a ticket where the customer
+says nothing, or understates the amount, and the record shows an unresolved refund over
+£100 would sail through as `self`. As the simulated client (no real one to ask — D-020's
+standing basis): **once the order record is known, an unresolved refund, credit or
+compensation over £100 must go to a human, regardless of what the customer stated or
+whether they stated anything.** "Unresolved" matters — a refund already `paid` needs no
+further review, and a self-handled reply reporting that fact (`hl-a0006`, sub-£175, already
+paid, wrongly *not* flagged by a naive "any order with a refund over £100" version of this
+rule — checked and excluded) is exactly correct, not a violation.
+
+Implemented as a second, later policy layer, `router.enforce_record_policy` (`router.py`),
+run in `evaluate_answerer.generate_one` right after the order lookup that already happens
+for the answer, so it costs nothing new: the router's `enforce_policy` (D-021) stays exactly
+as before, operating on ticket text only. `answerer.matched_orders` (`answerer.py`) exposes
+the parsed order records `order_facts_block` was already rendering to prose. Unit-tested
+with no API key (`tests/test_router.py`) for: an understated/unstated claim with an
+unresolved record refund over threshold (forces escalation); a resolved (`paid`) refund over
+threshold (does not); an unresolved refund under threshold (does not); no matching order
+(no-op).
+
+**Verified against the real eval set at zero cost, no regeneration.** Replayed
+`enforce_record_policy` over every existing dev and test `answerer_v1` candidate's already-
+looked-up order records: **zero tickets flip** on either split. The only two orders in
+`data/orders/orders.jsonl` with an unresolved refund over £100 are `49001` (`hl-0233`,
+already `human` for `legal_or_chargeback_threat` — unaffected) and `50902` (not referenced
+by any eval ticket). So this closes a real design gap with no eval ticket currently
+exercising it end-to-end — the fix is forward-looking, not a score bump, and no eval run
+was needed or spent on it.
+
+**Part 1b: D-024's ground-rule-3 question, settled.** D-024 asked whether ground rule 3
+("never claim to have already cancelled, changed, refunded, or performed any account
+action") is broader than brief §6 requires, since §6 only names order and money changes as
+human-only and is silent on reversible account admin (an address change, a marketing
+unsubscribe). **As the simulated client: ground rule 3 stays exactly as broad as it is,
+covering every account action, not narrowed to order/money.** The two questions are
+different axes, not one: brief §6 asks *who is allowed to make the change* (a human, for
+order/money); ground rule 3 asks *what the system may claim has already happened* — and this
+system has no execution capability at all, for any category, order/money or address/
+marketing alike (no write path exists anywhere in this codebase; `answerer.py` only reads
+`orders.jsonl` and drafts text). Narrowing ground rule 3 would make the system claim an
+address or unsubscribe change is "done" when, architecturally, nothing anywhere ever
+executes it — a false claim regardless of brief §6's scope. This resolves `hl-0236`'s two
+"actioned" criteria as **eval defects, same class as D-023**: reworded from claiming
+completion ("the address change is actioned") to what an honest reply can state ("the
+address change is recorded / will be used ..."). Re-scored against the existing,
+unregenerated test candidate (`--no-judge` not used — a real judge pass, $0.0319, test
+remains `test (seen)` per D-025) and **the number does not move** (still 90.62% required-
+fact coverage, 29/32): the candidate answer, generated before this fix existed, doesn't
+claim the address/marketing change is done, correctly per ground rule 3 — but it also
+doesn't confirm *receipt* of the request, which the reworded criteria do ask for and the
+answer doesn't clearly give either. That is a mild, honestly-reported answer-quality gap,
+not a criterion defect, and is left alone rather than regenerating a frozen test candidate
+to chase a rewording I just wrote — flagged as the natural next step, not fixed here.
+
+**Part 2: a public demo, Render's free tier.** Checked current terms rather than trusting
+memory (Render's own docs, fetched live): free web services need no credit card, get 750
+instance-hours/month, sleep after 15 minutes idle and cold-start in about a minute — and,
+the detail this design leans on, **free-tier services have an ephemeral filesystem: local
+SQLite files are wiped on every restart, redeploy, or spin-down.** That is the demo's reset
+mechanism, for free, with no code: a public visitor's queue decisions vanish the next time
+the service naturally idles out. `render.yaml` (a Blueprint, so setup is "connect the repo
+and click," not manual dashboard field-filling) runs `gunicorn triage.queue_app:app` with no
+`OPENAI_API_KEY` in its environment at all — verified in an isolated venv
+(`pip install .` then serving with gunicorn, no key set) that the app never imports or calls
+`triage.llm.get_client`, so **the public demo cannot spend API money even in principle, not
+just under a spend cap.** `gunicorn` added as a normal dependency (`pyproject.toml`) — the
+one new dependency this phase adds, for production serving in place of Flask's dev server.
+
+One supporting piece, in already-existing files, nothing new: `queue_db.py` gained
+`dump_packages` / `seed_if_empty` — `build_queue_data.py` now always writes
+`data/queue/seed_packages.json` (36 tickets, 64KB, committed) from whatever's in the local
+`queue.db`, and `queue_app.py` seeds an empty `packages` table from it once at process
+start. This also means a fresh clone that runs `make queue` without ever running
+`make queue-data` now sees a working demo instead of an empty queue — `make queue-data`
+remains how a real rebuild happens, seeding only fires when the table is empty.
+
+`/ponytail-review` on this diff before commit cut a second reset path: a first draft added
+a `DEMO_MODE`-gated 30-minute in-process wipe of `reviews`/`spot_checks`, as a belt-and-
+braces reset for a session that stays continuously busy past the 15-minute idle window.
+Flagged `yagni` — it duplicates the ephemeral-disk reset that is already the design's
+primary mechanism, for a sustained-traffic scenario a low-traffic portfolio demo won't hit.
+Cut, along with a second finding on the same diff (`seed_if_empty` was running on every
+request via `before_request` instead of once at import). `queue_db.reset_reviews` stays as
+a small, tested, manually-invocable escape hatch (`python -c "from triage.queue_db import
+connect, reset_reviews; ..."`) if the demo ever does need a mid-session clean-up without a
+redeploy — not wired into any automatic path.
+
+Landing page (`/`, `queue_app.py`) is new; the former `/` (the queue) moved to `/queue`. It
+states plainly: Hearth & Loom is fictional, nothing is sent to a real customer, every reply
+shown was generated once offline (zero live model calls), and this is a shared public demo
+whose data periodically resets — set expectations before a hiring manager clicks anything.
+
+**Not built:** authentication (nothing here is sensitive enough to need it — synthetic
+tickets, no real customer data, explicit demo framing), and no protection against a visitor
+seeing another visitor's in-flight edits (a shared single-file demo does not need one; if
+this stopped being fine, per-session isolation would be the fix, not attempted here).
+Visual polish is explicitly Phase 6's job, per the phase brief.
+
+**Spend.** One eval_answers re-score (Part 1b), $0.0319 — Part 1a and Part 2 made zero API
+calls. Phase total **$0.0319**; project-to-date **$2.4805** (`make spend`).
+
+**Next step, once a live URL exists:** watch whether Render's 60-second cold start after 15
+minutes idle is a bad first impression for a hiring manager clicking a cold link, and if so
+consider a low-effort keep-warm ping — not built pre-emptively since it may never matter.
+
+Sources checked for Render's current free tier: [Deploy for Free](https://render.com/docs/free),
+[Persistent Disks](https://render.com/docs/disks).
+
 ### D-026 — Phase 4 part 2: the human review queue
 
 **Reuse over regeneration.** The queue is built from Phase 3b's own saved answerer

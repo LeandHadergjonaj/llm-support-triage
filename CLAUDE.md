@@ -32,18 +32,30 @@ each will be measured against the baseline recorded in `results/`.
 3. **Labels are model-drafted until a human says otherwise.** Never describe the eval set
    as hand-labelled. `label_provenance` and `human_reviewed` are per-ticket and must stay
    accurate.
-4. **Do not overstate results.** The baseline is scored against labels drafted by the same
-   model family; absolute accuracy is optimistic and every report must say so.
+4. **Do not overstate results.** The baseline is scored against labels drafted by **the
+   same model at the same effort**, not merely the same family. A model agreeing with its
+   own judgement is not evidence that the judgement is right, so absolute accuracy is
+   optimistic by an unknown margin and every report must say so up front. The human review
+   pass is the only thing that shrinks this; until it lands, the numbers are a bar to beat,
+   not a measure of quality.
 5. **Beat the baseline or justify the complexity.** A later version that does not improve
    on `results/latest_dev.json` has not earned its extra moving parts.
 6. **The API key comes from the environment only.** `OPENAI_API_KEY` in `.env`, which
    is gitignored; never commit a key.
+7. **`gpt-5.6-terra` is the triage model, for this step and every later one**, unless the
+   client says otherwise. Fixed deliberately: a later version has to beat the baseline on
+   design — routing, retrieval, better prompts — and not by being handed a stronger model.
+   Changing it invalidates the comparison against `results/latest_dev.json`.
+8. **No run costs more than $2 without asking first.** Enforced, not remembered: every
+   command that calls the API takes `--max-cost` (default $2.00) and stops rather than
+   spend past it. Running spend is appended to `results/spend_log.jsonl`; `make spend`
+   prints the total. Projected cost goes in the plan before the money goes out.
 
 ## Stack
 
 Python 3.11, OpenAI Python SDK (Responses API), Pydantic for validation, strict
 structured outputs (`text.format`, `strict: true`) so parsing is never the failure mode.
-Model: `gpt-6-astra` for both label drafting and the baseline, overridable with
+Model: `gpt-5.6-terra` for both label drafting and the baseline, overridable with
 `TRIAGE_MODEL` or `--model`. No framework — at this stage it is a classification and
 evaluation problem.
 
@@ -58,6 +70,7 @@ make smoke      ~1c end-to-end pipeline check on 16 tickets (never an eval set)
 make eval       score the baseline on dev            <-- the main one
 make eval-test  score on the held-out test split
 make review     export a label sample for hand correction
+make spend      print total API spend recorded so far
 make test       checks that need no API key
 ```
 

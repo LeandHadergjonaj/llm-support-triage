@@ -1,4 +1,4 @@
-.PHONY: setup data smoke review eval eval-test test clean
+.PHONY: setup data smoke review eval eval-test spend test clean
 
 PY := .venv/bin/python
 
@@ -14,6 +14,9 @@ smoke:                     ## Cheap end-to-end pipeline check on ~16 tickets (no
 	$(PY) -m triage.evaluate --split dev --smoke --model gpt-5.6-luna --effort none
 	$(PY) -m triage.export_review --smoke -n 8
 	$(PY) -m triage.import_review --smoke
+
+spend:                     ## Print total API spend recorded in results/spend_log.jsonl
+	@$(PY) -c "from triage.llm import total_spend; print(f'Project API spend to date: \$${total_spend():.4f}')"
 
 review:                    ## Re-export the human-review sample from the current eval set
 	$(PY) -m triage.export_review

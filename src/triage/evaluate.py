@@ -18,7 +18,17 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from triage import baseline
-from triage.llm import DEFAULT_MODEL, EFFORTS, REPO_ROOT, Usage, call_json, get_client
+from triage.llm import (
+    DEFAULT_BUDGET_USD,
+    DEFAULT_MODEL,
+    EFFORTS,
+    REPO_ROOT,
+    Budget,
+    Usage,
+    call_json,
+    get_client,
+    record_spend,
+)
 from triage.metrics import score_slices
 from triage.schema import Prediction, Ticket, prediction_json_schema
 
@@ -57,13 +67,17 @@ def load_split(split: str, eval_dir: Path, smoke: bool) -> list[Ticket]:
     return tickets
 
 
-def run(tickets: list[Ticket], model: str, workers: int, effort: str) -> tuple[list[dict], Usage]:
+def run(
+    tickets: list[Ticket], model: str, workers: int, effort: str, budget: Budget
+) -> tuple[list[dict], Usage]:
     client = get_client()
     system = baseline.system_prompt()
     schema = prediction_json_schema()
     total = Usage()
 
-    def one(ticket: Ticket) -> dict:
+    def one(ticket: Ticket) -> dict | None:
+        if budget.stop_now():
+            return None
         raw, usage = call_json(
             client,
             model=model,
@@ -72,6 +86,7 @@ def run(tickets: list[Ticket], model: str, workers: int, effort: str) -> tuple[l
             json_schema=schema,
             effort=effort,
         )
+        budget.add(usage)
         try:
             prediction = Prediction.model_validate(raw)
         except ValidationError as exc:  # schema-valid but semantically off
@@ -93,11 +108,13 @@ def run(tickets: list[Ticket], model: str, workers: int, effort: str) -> tuple[l
     done = 0
     with ThreadPoolExecutor(max_workers=workers) as pool:
         for row in pool.map(one, tickets):
+            if row is None:
+                continue
             total.add(row.pop("_usage"))
             rows.append(row)
             done += 1
             if done % 25 == 0 or done == len(tickets):
-                print(f"  scored {done}/{len(tickets)}", flush=True)
+                print(f"  scored {done}/{len(tickets)}  ({budget.report()})", flush=True)
     rows.sort(key=lambda r: r["id"])
     return rows, total
 
@@ -106,7 +123,36 @@ def markdown_summary(record: dict) -> str:
     meta, scores, usage = record["run"], record["scores"], record["usage"]
     overall = scores["overall"]
     esc = overall["escalation"]
-    reviewed = record["label_quality"]["human_reviewed"]
+    quality = record["label_quality"]
+    reviewed = quality["human_reviewed"]
+    n = overall["n"]
+
+    # The caveat that matters most goes first and is not softened. The same model drafted
+    # these labels and produced these predictions, so a large part of the agreement below
+    # is a model being consistent with itself.
+    if quality.get("scored_against_own_labels"):
+        caveat = (
+            f"> ### :warning: These numbers are self-agreement, not accuracy\n>\n"
+            f"> `{meta['model']}` **drafted the reference labels it is being scored "
+            f"against here.** Urgency and escalation labels came from the same model on "
+            f"the same brief. A model agreeing with its own earlier judgement is not "
+            f"evidence that the judgement was right, so every figure below is optimistic "
+            f"by an unknown margin -- most of all on the judgement calls (urgency, "
+            f"escalation) and least on intent, which for Bitext tickets comes from a "
+            f"deterministic mapping rather than from the model.\n>\n"
+            f"> {reviewed} of {n} tickets in this split have been checked by a human. "
+            f"Until that number is meaningful, treat this as **a fixed bar for later "
+            f"versions to beat, not a measure of how good the triage is.** Later versions "
+            f"are scored on the same labels, so the comparison between them stays valid "
+            f"even while the absolute number does not."
+        )
+    else:
+        caveat = (
+            f"> Reference labels for urgency and escalation are **model-drafted**, not "
+            f"hand-labelled. {reviewed} of {n} tickets in this split have been corrected "
+            f"by a human. Treat the absolute numbers as provisional; they are meaningful "
+            f"mainly as a fixed bar for later versions to beat."
+        )
 
     smoke = record["label_quality"].get("smoke_test")
     lines = [
@@ -116,14 +162,10 @@ def markdown_summary(record: dict) -> str:
         f"- Prompt: `{meta['prompt_version']}`",
         f"- Model: `{meta['model']}` (effort `{meta['effort']}`)",
         f"- Run at: {meta['started_at']}",
-        f"- Tickets: {overall['n']}",
+        f"- Tickets: {n}",
+        f"- Reference labels drafted by: {', '.join(quality['labelers']) or 'unknown'}",
         "",
-        (
-            "> Reference labels for urgency and escalation are **model-drafted**, not "
-            f"hand-labelled. {reviewed} of {overall['n']} tickets in this split have been "
-            "corrected by a human. Treat the absolute numbers as provisional; they are "
-            "meaningful mainly as a fixed bar for later versions to beat."
-        ),
+        caveat,
         "",
         "## Headline",
         "",
@@ -225,6 +267,13 @@ def main() -> int:
     parser.add_argument("--limit", type=int, default=None, help="Score only the first N tickets.")
     parser.add_argument("--tag", default=None, help="Label this run in the results filename.")
     parser.add_argument(
+        "--max-cost",
+        type=float,
+        default=DEFAULT_BUDGET_USD,
+        metavar="USD",
+        help="Stop scoring once this much has been spent (project rule 8).",
+    )
+    parser.add_argument(
         "--smoke",
         action="store_true",
         help=(
@@ -253,8 +302,13 @@ def main() -> int:
         tickets = tickets[: args.limit]
 
     started = datetime.now(UTC)
-    print(f"Scoring {len(tickets)} {args.split} tickets with {args.model} (effort={args.effort})")
-    rows, usage = run(tickets, args.model, args.workers, args.effort)
+    budget = Budget(args.max_cost, args.model)
+    print(
+        f"Scoring {len(tickets)} {args.split} tickets with {args.model} "
+        f"(effort={args.effort}, cap ${args.max_cost:.2f})"
+    )
+    rows, usage = run(tickets, args.model, args.workers, args.effort, budget)
+    incomplete = len(rows) < len(tickets)
 
     record = {
         "run": {
@@ -274,7 +328,15 @@ def main() -> int:
             "labelers": sorted({
                 f"{t.labeler.model} (effort {t.labeler.effort})" for t in tickets if t.labeler
             }),
+            # True when the model being scored also drafted the labels it is scored
+            # against. It is then partly marking its own work, so agreement is inflated
+            # by an unknown amount. Recorded per run so the caveat travels with the
+            # numbers instead of living only in a README.
+            "scored_against_own_labels": any(
+                t.labeler and t.labeler.model == args.model for t in tickets
+            ),
         },
+        "complete": not incomplete,
         "usage": usage.summary(args.model),
         "scores": score_slices(rows),
         "predictions": rows,
@@ -283,13 +345,14 @@ def main() -> int:
     results_dir.mkdir(parents=True, exist_ok=True)
     stamp = started.strftime("%Y%m%dT%H%M%SZ")
     tag = f"_{args.tag}" if args.tag else ""
-    name = f"{stamp}_{baseline.VERSION}_{args.split}{tag}"
+    partial = "_INCOMPLETE" if incomplete else ""
+    name = f"{stamp}_{baseline.VERSION}_{args.split}{tag}{partial}"
     (results_dir / f"{name}.json").write_text(json.dumps(record, indent=2, ensure_ascii=False))
     summary = markdown_summary(record)
     (results_dir / f"{name}.md").write_text(summary)
     # latest_<split>.json is the fixed bar later versions are compared against, so only
     # a real run is allowed to move it.
-    if not args.smoke:
+    if not args.smoke and not incomplete:
         (results_dir / f"latest_{args.split}.json").write_text(
             json.dumps(record, indent=2, ensure_ascii=False)
         )
@@ -297,6 +360,17 @@ def main() -> int:
     print("\n" + summary)
     rel = results_dir.relative_to(REPO_ROOT)
     print(f"\nWrote {rel}/{name}.json and {rel}/{name}.md")
+    if not args.smoke:
+        running = record_spend(
+            f"evaluate:{args.split}", args.model, usage, note=f"{len(rows)} tickets"
+        )
+        print(f"Spend logged; project total now ${running:.4f}")
+    if incomplete:
+        raise SystemExit(
+            f"\nSTOPPED ON BUDGET after {len(rows)}/{len(tickets)} tickets "
+            f"({budget.report()}). Partial scores are NOT a baseline and "
+            f"latest_{args.split}.json was left untouched."
+        )
     return 0
 
 

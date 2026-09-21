@@ -12,6 +12,7 @@ import os
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from threading import Lock
 
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -19,7 +20,11 @@ from openai import OpenAI
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 # Override for a whole run with TRIAGE_MODEL, or per command with --model.
-DEFAULT_MODEL = os.environ.get("TRIAGE_MODEL", "gpt-6-astra")
+#
+# Fixed at gpt-5.6-terra by project rule 7: later versions of the system have to beat the
+# baseline on design, not by being given a stronger model. Changing this invalidates the
+# comparison against results/latest_dev.json.
+DEFAULT_MODEL = os.environ.get("TRIAGE_MODEL", "gpt-5.6-terra")
 
 # USD per million tokens: (uncached input, cached input, output).
 #
@@ -104,6 +109,83 @@ class Usage:
             "latency_p50_s": pct(0.50),
             "latency_p95_s": pct(0.95),
         }
+
+
+# --- Spend control -----------------------------------------------------------
+#
+# Project rule 8: no run costs more than $2 without asking. That is enforced here rather
+# than left to whoever is watching the terminal.
+
+DEFAULT_BUDGET_USD = 2.00
+SPEND_LOG = REPO_ROOT / "results" / "spend_log.jsonl"
+
+
+class BudgetExceeded(RuntimeError):
+    """Raised when a run has spent its cap and must stop issuing calls."""
+
+
+class Budget:
+    """A spend cap shared across the threads of one run.
+
+    Checked between calls, not inside them, so the cap can be overshot by at most one
+    call per worker -- a few cents at these rates. `stop_now()` is the cheap check a
+    worker makes before deciding to spend; it never blocks on the API.
+    """
+
+    def __init__(self, limit_usd: float, model: str) -> None:
+        self.limit_usd = limit_usd
+        self.model = model
+        self.usage = Usage()
+        self.tripped = False
+        self._lock = Lock()
+
+    def stop_now(self) -> bool:
+        with self._lock:
+            return self.tripped
+
+    def add(self, usage: Usage) -> None:
+        with self._lock:
+            self.usage.add(usage)
+            if self.usage.cost_usd(self.model) >= self.limit_usd:
+                self.tripped = True
+
+    @property
+    def spent_usd(self) -> float:
+        with self._lock:
+            return self.usage.cost_usd(self.model)
+
+    def report(self) -> str:
+        return f"${self.spent_usd:.4f} of ${self.limit_usd:.2f} cap"
+
+
+def record_spend(stage: str, model: str, usage: Usage, note: str | None = None) -> float:
+    """Append one stage's spend to the ledger and return the new running total.
+
+    A local audit trail for rule 8, so "has this project cost more than $2 today" is a
+    question with an answer rather than a recollection.
+    """
+    SPEND_LOG.parent.mkdir(parents=True, exist_ok=True)
+    entry = {
+        "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "stage": stage,
+        "model": model,
+        "cost_usd": round(usage.cost_usd(model), 6),
+        "calls": usage.calls,
+        "note": note,
+    }
+    with SPEND_LOG.open("a") as fh:
+        fh.write(json.dumps(entry) + "\n")
+    return total_spend()
+
+
+def total_spend() -> float:
+    if not SPEND_LOG.exists():
+        return 0.0
+    total = 0.0
+    for line in SPEND_LOG.read_text().splitlines():
+        if line.strip():
+            total += json.loads(line)["cost_usd"]
+    return total
 
 
 def get_client() -> OpenAI:

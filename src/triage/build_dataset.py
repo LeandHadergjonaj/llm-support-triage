@@ -23,7 +23,17 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from triage.labeler import labeler_json_schema, labeler_system, labeler_user
-from triage.llm import DEFAULT_MODEL, EFFORTS, REPO_ROOT, Usage, call_json, get_client
+from triage.llm import (
+    DEFAULT_BUDGET_USD,
+    DEFAULT_MODEL,
+    EFFORTS,
+    REPO_ROOT,
+    Budget,
+    Usage,
+    call_json,
+    get_client,
+    record_spend,
+)
 from triage.taxonomy import BITEXT_INTENT_TO_CATEGORY
 
 DATA = REPO_ROOT / "data"
@@ -230,14 +240,22 @@ def take_subset(tickets: list[dict], limit: int) -> list[dict]:
 
 
 def stage_label(
-    tickets: list[dict], model: str, workers: int, effort: str
+    tickets: list[dict], model: str, workers: int, effort: str, budget: Budget
 ) -> tuple[list[dict], Usage]:
+    """Draft labels for `tickets`, stopping early if the budget runs out.
+
+    Returns only the tickets actually drafted. A short return is not an error here: the
+    caller writes what it got to the draft cache and a re-run picks up the rest, so a
+    budget stop costs nothing already paid for.
+    """
     client = get_client()
     system = labeler_system()
     schema = labeler_json_schema()
     total = Usage()
 
-    def one(ticket: dict) -> dict:
+    def one(ticket: dict) -> dict | None:
+        if budget.stop_now():
+            return None
         draft, usage = call_json(
             client,
             model=model,
@@ -246,17 +264,20 @@ def stage_label(
             json_schema=schema,
             effort=effort,
         )
+        budget.add(usage)
         return {**ticket, "draft": draft, "_usage": usage}
 
     done = 0
     labelled: list[dict] = []
     with ThreadPoolExecutor(max_workers=workers) as pool:
         for result in pool.map(one, tickets):
+            if result is None:
+                continue
             total.add(result.pop("_usage"))
             labelled.append(result)
             done += 1
             if done % 25 == 0 or done == len(tickets):
-                print(f"  drafted {done}/{len(tickets)}", flush=True)
+                print(f"  drafted {done}/{len(tickets)}  ({budget.report()})", flush=True)
     labelled.sort(key=lambda t: t["id"])
     return labelled, total
 
@@ -352,6 +373,16 @@ def main() -> int:
     parser.add_argument("--effort", default="high", choices=EFFORTS)
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument(
+        "--max-cost",
+        type=float,
+        default=DEFAULT_BUDGET_USD,
+        metavar="USD",
+        help=(
+            "Stop drafting once this much has been spent (project rule 8). Drafts "
+            "already paid for are kept; re-run to continue where it stopped."
+        ),
+    )
+    parser.add_argument(
         "--relabel",
         action="store_true",
         help="Re-draft labels even if a cached draft exists (costs money).",
@@ -386,18 +417,43 @@ def main() -> int:
     write_jsonl(sampled_path, tickets)
     print(f"  {len(tickets)} tickets -> {sampled_path.relative_to(REPO_ROOT)}")
 
+    # Stage 2 resumes rather than restarts: whatever is already in the draft cache is
+    # kept and only the missing tickets are paid for. That is what makes the budget stop
+    # below safe -- it can never throw away drafting that has already been billed.
+    cached: list[dict] = []
     if drafted_path.exists() and not args.relabel:
-        print(f"Stage 2: reusing cached drafts ({drafted_path.relative_to(REPO_ROOT)})")
-        labelled = [
+        cached = [
             json.loads(line) for line in drafted_path.read_text().splitlines() if line.strip()
         ]
-        if {t["id"] for t in labelled} != {t["id"] for t in tickets}:
-            raise SystemExit("Cached drafts do not match the current sample. Re-run --relabel.")
-    else:
-        print(f"Stage 2: drafting labels with {args.model} (this costs money)")
-        labelled, usage = stage_label(tickets, args.model, args.workers, args.effort)
+        wanted = {t["id"] for t in tickets}
+        if not {t["id"] for t in cached} <= wanted:
+            raise SystemExit(
+                "Cached drafts do not belong to the current sample. Re-run with --relabel."
+            )
+
+    todo = [t for t in tickets if t["id"] not in {c["id"] for c in cached}]
+    if cached:
+        print(f"Stage 2: reusing {len(cached)} cached drafts ({drafted_path.relative_to(REPO_ROOT)})")
+    if todo:
+        budget = Budget(args.max_cost, args.model)
+        print(
+            f"Stage 2: drafting {len(todo)} labels with {args.model} (effort={args.effort}, "
+            f"cap ${args.max_cost:.2f}) -- this costs money"
+        )
+        fresh, usage = stage_label(todo, args.model, args.workers, args.effort, budget)
+        labelled = sorted(cached + fresh, key=lambda t: t["id"])
         write_jsonl(drafted_path, labelled)
         print(f"  drafting usage: {json.dumps(usage.summary(args.model))}")
+        running = record_spend("build_dataset", args.model, usage, note=f"{len(fresh)} drafts")
+        print(f"  spend logged; project total now ${running:.4f}")
+        if len(fresh) < len(todo):
+            raise SystemExit(
+                f"\nSTOPPED ON BUDGET after {len(fresh)}/{len(todo)} drafts "
+                f"({budget.report()}). {len(labelled)} drafts are cached and will not be "
+                f"paid for again. Re-run with a higher --max-cost to finish."
+            )
+    else:
+        labelled = sorted(cached, key=lambda t: t["id"])
 
     final = assemble(labelled, args.model, args.effort, smoke)
 

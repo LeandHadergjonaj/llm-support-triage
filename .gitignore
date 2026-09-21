@@ -15,6 +15,9 @@ venv/
 data/smoke/
 results/smoke/
 
+# Local spend ledger (rule 8). Machine-local accounting, not project history.
+results/spend_log.jsonl
+
 # Raw upstream dataset (19 MB; fetched by scripts/fetch_dataset.py)
 data/raw/
 

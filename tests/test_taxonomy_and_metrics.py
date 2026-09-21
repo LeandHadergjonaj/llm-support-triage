@@ -13,9 +13,9 @@ import pytest
 from pydantic import ValidationError
 
 from triage.baseline import system_prompt
-from triage.evaluate import load_split
+from triage.evaluate import load_split, markdown_summary
 from triage.labeler import BRIEF_PATH, labeler_json_schema
-from triage.llm import DEFAULT_MODEL, PRICING_PER_MTOK, Usage
+from triage.llm import DEFAULT_BUDGET_USD, DEFAULT_MODEL, PRICING_PER_MTOK, Budget, Usage
 from triage.metrics import score, score_escalation
 from triage.schema import Prediction, Ticket, prediction_json_schema
 from triage.taxonomy import (
@@ -239,3 +239,51 @@ def test_real_tickets_are_refused_as_a_smoke_run(tmp_path):
 
 def test_tickets_default_to_not_being_smoke_tests():
     assert Ticket.model_validate_json(_ticket()).smoke_test is False
+
+
+# --- Spend cap (rule 8) -----------------------------------------------------
+
+
+def test_budget_trips_once_the_cap_is_reached():
+    budget = Budget(limit_usd=0.01, model=DEFAULT_MODEL)
+    assert not budget.stop_now()
+    # One call well under the cap leaves the budget open.
+    budget.add(Usage(input_tokens=100, output_tokens=10, calls=1))
+    assert not budget.stop_now()
+    # A call that takes it over closes it.
+    budget.add(Usage(input_tokens=0, output_tokens=1_000_000, calls=1))
+    assert budget.stop_now()
+    assert budget.spent_usd >= 0.01
+
+
+def test_budget_default_is_the_documented_two_dollars():
+    assert DEFAULT_BUDGET_USD == 2.00
+
+
+def test_same_model_scoring_is_flagged_in_the_summary():
+    """The caveat has to be impossible to miss when a model marks its own work."""
+    record = {
+        "run": {"split": "dev", "prompt_version": "baseline_v1", "model": "m",
+                "effort": "high", "workers": 8, "started_at": "now", "tag": None},
+        "label_quality": {"human_reviewed": 0, "total": 1, "smoke_test": False,
+                          "labelers": ["m (effort high)"], "scored_against_own_labels": True},
+        "usage": {"total_cost_usd": 0.1, "calls": 1, "cost_per_ticket_usd": 0.1,
+                  "latency_mean_s": 1.0, "latency_p50_s": 1.0, "latency_p95_s": 1.0,
+                  "cached_tokens": 0, "cache_write_tokens": 0, "reasoning_tokens": 0},
+        "scores": {"overall": {
+            "n": 1, "intent_accuracy": 1.0, "urgency_accuracy": 1.0,
+            "all_three_correct": 1.0, "intent_confusions": [], "confidence_calibration": [],
+            "escalation": {"accuracy": 1.0, "correct_escalations": 0,
+                           "unnecessary_escalations": 0, "missed_escalations": 0,
+                           "correct_non_escalations": 1, "precision": None, "recall": None,
+                           "gold_escalation_rate": 0.0, "predicted_escalation_rate": 0.0},
+        }},
+    }
+    summary = markdown_summary(record)
+    assert "self-agreement, not accuracy" in summary
+    assert "drafted the reference labels it is being scored against here" in summary
+    # It must come before the numbers, not in a footnote.
+    assert summary.index("self-agreement") < summary.index("## Headline")
+
+    record["label_quality"]["scored_against_own_labels"] = False
+    assert "self-agreement, not accuracy" not in markdown_summary(record)

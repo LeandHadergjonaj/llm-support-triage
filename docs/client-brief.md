@@ -4,7 +4,7 @@
 for the triage label set. Policy documents and the orders database in later steps must be
 consistent with it.*
 
-**Version: v3** — 2026-09-21. Changelog in §7. Every label, every prompt and every result
+**Version: v4** — 2026-09-21. Changelog in §7. Every label, every prompt and every result
 in this repository must state which version of this brief it was produced under.
 
 ---
@@ -154,7 +154,7 @@ A ticket **must** be escalated if any of the following hold. Record every reason
 
 | Reason | Trigger |
 |---|---|
-| `refund_over_threshold` | The customer is asking for a refund, credit, replacement or compensation with a value **over £100**. Where a figure is stated, use it. Where no figure is stated, do not infer one — this reason does not apply. |
+| `refund_over_threshold` | The customer is asking for a refund, credit, replacement or compensation with a value **over £100**. Where a figure is stated, use it. Where no figure is stated, do not infer one — this reason does not apply. **Where the stated figure and the order record later turn out to disagree, the stated figure still governs the escalation decision** — triage never has the order record, only the ticket text — and the mismatch itself is not a separate escalation reason. Once a human or an answering step *does* have the order record, the record governs what is actually said to the customer; a stated figure that conflicts with it is a discrepancy to flag, not a fact to repeat. |
 | `legal_or_chargeback_threat` | The customer mentions solicitors, legal action, small claims, trading standards, an ombudsman, a chargeback, disputing the charge with their bank, or going to the press or social media to damage the company. |
 | `product_safety` | Any suggestion the goods caused or could cause physical harm: injury, burns, cuts, electrical faults, smoke, overheating, sharp edges, choking risk, collapse under load. Applies even when the customer is calm and even when they ask for nothing. |
 | `account_security` | Suspected unauthorised access: an account the customer cannot get into and did not lock themselves out of, orders or address changes the customer did not make, unrecognised charges, a suspected phishing email. A plain forgotten password is **not** this. |
@@ -179,6 +179,20 @@ gesture. It classifies and routes. Anything that moves money or changes an order
 action in every version of this system.
 
 ## 7. Changelog
+
+### v4 — 2026-09-21
+
+One clarification, settling `DECISIONS.md` D-025: when a customer's stated figure and the
+order record disagree, the stated figure still governs the **escalation** decision (triage
+never sees the order record), but the order record governs what is actually **said** to the
+customer once someone — human or answering step — does have it. A stated-vs-record mismatch
+is not, by itself, a second escalation reason. Prompted by `hl-a0012` (Phase 3b answer eval,
+test split): a customer claimed £150 for an item the order record shows is a £95 pendant
+light, and the eval's `must_handle: self` label disagreed with the router's `human` result
+even though the router was doing exactly what v3 §5 already said ("where a figure is
+stated, use it"). Does not change any triage label (`hl-a0012` was already escalated
+correctly under v3); corrects the answer eval's `must_handle` field only. No triage or
+`answers_dev.jsonl` labels are affected.
 
 ### v3 — 2026-09-21
 

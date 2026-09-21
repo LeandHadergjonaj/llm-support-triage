@@ -1,0 +1,57 @@
+{
+  "run": {
+    "at": "2026-09-21T16:20:14Z",
+    "split": "test",
+    "judge_model": "gpt-5.6-terra"
+  },
+  "usage": {
+    "calls": 16,
+    "input_tokens": 6576,
+    "output_tokens": 1555,
+    "reasoning_tokens": 366,
+    "cached_tokens": 0,
+    "cache_write_tokens": 0,
+    "total_cost_usd": 0.0318,
+    "cost_per_ticket_usd": 0.001988,
+    "latency_mean_s": 3.0,
+    "latency_p50_s": 2.87,
+    "latency_p95_s": 4.67
+  },
+  "scores": {
+    "tickets": 16,
+    "routing_accuracy": {
+      "rate": 1.0,
+      "n": 16,
+      "ci95": [
+        0.8064,
+        1.0
+      ]
+    },
+    "content_graded": 16,
+    "required_fact_coverage": {
+      "rate": 0.9062,
+      "n": 32,
+      "ci95": [
+        0.7578,
+        0.9676
+      ]
+    },
+    "forbidden_avoidance": {
+      "rate": 1.0,
+      "n": 27,
+      "ci95": [
+        0.8754,
+        1.0
+      ]
+    },
+    "fully_correct_of_graded": {
+      "rate": 0.875,
+      "n": 16,
+      "ci95": [
+        0.6398,
+        0.965
+      ]
+    },
+    "missing_candidates": []
+  }
+}

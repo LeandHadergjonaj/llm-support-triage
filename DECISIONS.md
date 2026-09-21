@@ -11,6 +11,52 @@ differently — not every implementation choice.
 
 ## 2026-09-21
 
+### D-025 — Phase 4 part 1: settle the stated-vs-record figure, fix two eval criteria, brief v4
+
+Three items named in the Phase 4 brief as tidy-up from D-024's "next step", all on
+`data/eval/answers_test.jsonl` -- **test is now treated as seen from this commit on**, per
+the Phase 4 brief; any later test number is labelled that way, and `83.87%` stays the
+number of record for the original held-out run.
+
+1. **`hl-0011`**: dropped the `expected_must_contain` item `"not a specific refund date"`.
+   Same defect class as D-023 -- an absence phrased as a positive requirement, and already
+   covered by the existing `expected_must_not_contain` item on the same ticket ("a promised
+   refund amount or payout date"). A grep across both splits for the D-023 pattern
+   (`not `/`silence on`/`no `-led items) found no further instances; `hl-0159` and
+   `hl-a0013`'s `"no senior review is needed"` are genuine positive claims an answer can
+   state, not this defect.
+2. **`hl-0236`**: dropped the literal `2026-09-09` from the refund-chase criterion, kept the
+   substance ("approved and still awaiting payout, now overdue against the 5 working day
+   window"). No natural reply states an ISO date; the judge marked a correct "9 September"
+   answer wrong for omitting the year, which is a criterion defect, not an answer defect
+   (D-024 flagged this at the time). The other tension D-024 raised for this ticket --
+   ground rule 3 ("never claim to have performed an account action") vs. an expectation that
+   the address/unsubscribe be "actioned" -- is left as is: brief v3/v4 §6 only names *order*
+   and *money* actions as human-only, and an address/marketing-preference change is
+   reversible, non-financial account administration, which ground rule 3's own reasoning
+   (irreversible actions need a person) does not obviously reach. Not changing the ground
+   rule on one ticket's evidence; flagged for the next full review pass.
+3. **`hl-a0012`**: `must_handle` corrected from `self` to `human`, and brief v4 §5 settles
+   the general rule (as the simulated client, since there is no real one -- D-020's
+   standing basis for this kind of call): **a stated-vs-record mismatch does not add a new
+   escalation reason; the stated figure still governs escalation** (triage never has the
+   order record, only the ticket text, so v3's "where a figure is stated, use it" already
+   answers this), **and the order record governs what is actually said** once a human or
+   the answerer has it. `hl-a0012`'s customer claims £150 for an item the record shows is a
+   £95 pendant light; the router correctly escalated on the stated £150 under the existing
+   rule, but the eval's `self` label assumed grounding happened before routing, which is
+   not how the system is built (route first on ticket text, ground only what is then
+   answered or handed over). The router's behaviour was right; the label was wrong. This
+   is a labels-and-brief change together per rule 5, so the brief moves to **v4** with a
+   changelog entry (§7) -- no triage label changes, and `answers_dev.jsonl` is untouched.
+
+Re-scored `data/eval/answers_test.jsonl` against the existing test candidates
+(`results/20260921T160726Z_answerer_v1_test_candidates.jsonl`, no regeneration, judge pass
+only) after these three fixes -- see the Phase 4 report for the corrected number, reported
+as `test (seen)`, never blended with `83.87%`.
+
+## 2026-09-21
+
 ### D-024 — Phase 3b: the system answers tickets. Dev converges to a clean pass; test surfaces two real, left-alone findings
 
 **Design: the simplest thing that could work, per the brief.** `src/triage/answerer.py` is

@@ -1,4 +1,4 @@
-.PHONY: setup data smoke review eval eval-test spend test clean
+.PHONY: setup data smoke review import-review eval eval-test spend test clean
 
 PY := .venv/bin/python
 
@@ -20,6 +20,9 @@ spend:                     ## Print total API spend recorded in results/spend_lo
 
 review:                    ## Re-export the human-review sample from the current eval set
 	$(PY) -m triage.export_review
+
+import-review:             ## Fold the corrected review CSV back into the eval set
+	$(PY) -m triage.import_review
 
 eval:                      ## Score the baseline on the DEV split (this is the command to run)
 	$(PY) -m triage.evaluate --split dev

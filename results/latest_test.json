@@ -1,0 +1,2972 @@
+{
+  "run": {
+    "split": "test",
+    "prompt_version": "baseline_v1",
+    "model": "gpt-5.6-terra",
+    "effort": "high",
+    "workers": 8,
+    "started_at": "2026-09-21T13:56:58+00:00",
+    "tag": null
+  },
+  "label_quality": {
+    "urgency_and_escalation_labels": "model_drafted",
+    "human_reviewed": 0,
+    "total": 108,
+    "smoke_test": false,
+    "labelers": [
+      "gpt-5.6-terra (effort high)"
+    ],
+    "scored_against_own_labels": true
+  },
+  "complete": true,
+  "usage": {
+    "calls": 108,
+    "input_tokens": 132912,
+    "output_tokens": 7609,
+    "reasoning_tokens": 441,
+    "cached_tokens": 129816,
+    "cache_write_tokens": 2772,
+    "total_cost_usd": 0.1248,
+    "cost_per_ticket_usd": 0.001156,
+    "latency_mean_s": 2.22,
+    "latency_p50_s": 2.1,
+    "latency_p95_s": 3.06
+  },
+  "scores": {
+    "overall": {
+      "n": 108,
+      "intent_accuracy": 0.963,
+      "urgency_accuracy": 0.9074,
+      "all_three_correct": 0.8704,
+      "escalation": {
+        "correct_escalations": 11,
+        "unnecessary_escalations": 2,
+        "missed_escalations": 1,
+        "correct_non_escalations": 94,
+        "accuracy": 0.9722,
+        "precision": 0.8462,
+        "recall": 0.9167,
+        "gold_escalation_rate": 0.1111,
+        "predicted_escalation_rate": 0.1204,
+        "exact_reason_match_when_both_escalate": "11/11",
+        "by_reason": {
+          "account_security": {
+            "gold": 1,
+            "predicted": 1,
+            "both": 1
+          },
+          "legal_or_chargeback_threat": {
+            "gold": 2,
+            "predicted": 2,
+            "both": 2
+          },
+          "out_of_scope": {
+            "gold": 3,
+            "predicted": 4,
+            "both": 2
+          },
+          "product_safety": {
+            "gold": 3,
+            "predicted": 3,
+            "both": 3
+          },
+          "refund_over_threshold": {
+            "gold": 2,
+            "predicted": 2,
+            "both": 2
+          },
+          "severe_customer_anger": {
+            "gold": 1,
+            "predicted": 1,
+            "both": 1
+          }
+        }
+      },
+      "intent_per_class": {
+        "order_management": {
+          "support": 12,
+          "predicted": 11,
+          "recall": 0.9167,
+          "precision": 1.0
+        },
+        "delivery_and_shipping": {
+          "support": 11,
+          "predicted": 12,
+          "recall": 1.0,
+          "precision": 0.9167
+        },
+        "returns_and_refunds": {
+          "support": 15,
+          "predicted": 14,
+          "recall": 0.9333,
+          "precision": 1.0
+        },
+        "billing_and_payment": {
+          "support": 10,
+          "predicted": 10,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "account_management": {
+          "support": 10,
+          "predicted": 10,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "account_access": {
+          "support": 12,
+          "predicted": 12,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "product_issue": {
+          "support": 4,
+          "predicted": 4,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "feedback_and_complaint": {
+          "support": 11,
+          "predicted": 10,
+          "recall": 0.8182,
+          "precision": 0.9
+        },
+        "human_agent_request": {
+          "support": 10,
+          "predicted": 10,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "marketing_preferences": {
+          "support": 11,
+          "predicted": 11,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "out_of_scope": {
+          "support": 2,
+          "predicted": 4,
+          "recall": 1.0,
+          "precision": 0.5
+        }
+      },
+      "urgency_per_class": {
+        "high": {
+          "support": 5,
+          "predicted": 5,
+          "recall": 0.6,
+          "precision": 0.6
+        },
+        "normal": {
+          "support": 27,
+          "predicted": 27,
+          "recall": 0.8148,
+          "precision": 0.8148
+        },
+        "low": {
+          "support": 76,
+          "predicted": 76,
+          "recall": 0.9605,
+          "precision": 0.9605
+        }
+      },
+      "intent_confusions": [
+        {
+          "gold": "feedback_and_complaint",
+          "predicted": "out_of_scope",
+          "n": 2
+        },
+        {
+          "gold": "returns_and_refunds",
+          "predicted": "feedback_and_complaint",
+          "n": 1
+        },
+        {
+          "gold": "order_management",
+          "predicted": "delivery_and_shipping",
+          "n": 1
+        }
+      ],
+      "urgency_confusions": [
+        {
+          "gold": "normal",
+          "predicted": "low",
+          "n": 3
+        },
+        {
+          "gold": "low",
+          "predicted": "normal",
+          "n": 3
+        },
+        {
+          "gold": "high",
+          "predicted": "normal",
+          "n": 2
+        },
+        {
+          "gold": "normal",
+          "predicted": "high",
+          "n": 2
+        }
+      ],
+      "confidence_calibration": [
+        {
+          "confidence_range": "[0.00, 0.50)",
+          "n": 4,
+          "all_three_correct": 0.75,
+          "mean_confidence": 0.465
+        },
+        {
+          "confidence_range": "[0.50, 0.70)",
+          "n": 8,
+          "all_three_correct": 0.875,
+          "mean_confidence": 0.613
+        },
+        {
+          "confidence_range": "[0.70, 0.80)",
+          "n": 14,
+          "all_three_correct": 0.7857,
+          "mean_confidence": 0.737
+        },
+        {
+          "confidence_range": "[0.80, 0.90)",
+          "n": 16,
+          "all_three_correct": 0.875,
+          "mean_confidence": 0.851
+        },
+        {
+          "confidence_range": "[0.90, 0.95)",
+          "n": 16,
+          "all_three_correct": 0.8125,
+          "mean_confidence": 0.928
+        },
+        {
+          "confidence_range": "[0.95, 1.00)",
+          "n": 50,
+          "all_three_correct": 0.92,
+          "mean_confidence": 0.981
+        }
+      ]
+    },
+    "bitext_only": {
+      "n": 90,
+      "intent_accuracy": 0.9667,
+      "urgency_accuracy": 0.9222,
+      "all_three_correct": 0.8889,
+      "escalation": {
+        "correct_escalations": 1,
+        "unnecessary_escalations": 2,
+        "missed_escalations": 1,
+        "correct_non_escalations": 86,
+        "accuracy": 0.9667,
+        "precision": 0.3333,
+        "recall": 0.5,
+        "gold_escalation_rate": 0.0222,
+        "predicted_escalation_rate": 0.0333,
+        "exact_reason_match_when_both_escalate": "1/1",
+        "by_reason": {
+          "out_of_scope": {
+            "gold": 1,
+            "predicted": 2,
+            "both": 0
+          },
+          "refund_over_threshold": {
+            "gold": 1,
+            "predicted": 1,
+            "both": 1
+          }
+        }
+      },
+      "intent_per_class": {
+        "order_management": {
+          "support": 10,
+          "predicted": 10,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "delivery_and_shipping": {
+          "support": 10,
+          "predicted": 10,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "returns_and_refunds": {
+          "support": 10,
+          "predicted": 9,
+          "recall": 0.9,
+          "precision": 1.0
+        },
+        "billing_and_payment": {
+          "support": 10,
+          "predicted": 10,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "account_management": {
+          "support": 10,
+          "predicted": 10,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "account_access": {
+          "support": 10,
+          "predicted": 10,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "feedback_and_complaint": {
+          "support": 10,
+          "predicted": 9,
+          "recall": 0.8,
+          "precision": 0.8889
+        },
+        "human_agent_request": {
+          "support": 10,
+          "predicted": 10,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "marketing_preferences": {
+          "support": 10,
+          "predicted": 10,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "out_of_scope": {
+          "support": 0,
+          "predicted": 2,
+          "recall": null,
+          "precision": 0.0
+        }
+      },
+      "urgency_per_class": {
+        "high": {
+          "support": 1,
+          "predicted": 0,
+          "recall": 0.0,
+          "precision": null
+        },
+        "normal": {
+          "support": 17,
+          "predicted": 18,
+          "recall": 0.8235,
+          "precision": 0.7778
+        },
+        "low": {
+          "support": 72,
+          "predicted": 72,
+          "recall": 0.9583,
+          "precision": 0.9583
+        }
+      },
+      "intent_confusions": [
+        {
+          "gold": "feedback_and_complaint",
+          "predicted": "out_of_scope",
+          "n": 2
+        },
+        {
+          "gold": "returns_and_refunds",
+          "predicted": "feedback_and_complaint",
+          "n": 1
+        }
+      ],
+      "urgency_confusions": [
+        {
+          "gold": "normal",
+          "predicted": "low",
+          "n": 3
+        },
+        {
+          "gold": "low",
+          "predicted": "normal",
+          "n": 3
+        },
+        {
+          "gold": "high",
+          "predicted": "normal",
+          "n": 1
+        }
+      ],
+      "confidence_calibration": [
+        {
+          "confidence_range": "[0.00, 0.50)",
+          "n": 4,
+          "all_three_correct": 0.75,
+          "mean_confidence": 0.465
+        },
+        {
+          "confidence_range": "[0.50, 0.70)",
+          "n": 7,
+          "all_three_correct": 0.8571,
+          "mean_confidence": 0.611
+        },
+        {
+          "confidence_range": "[0.70, 0.80)",
+          "n": 14,
+          "all_three_correct": 0.7857,
+          "mean_confidence": 0.737
+        },
+        {
+          "confidence_range": "[0.80, 0.90)",
+          "n": 15,
+          "all_three_correct": 0.9333,
+          "mean_confidence": 0.852
+        },
+        {
+          "confidence_range": "[0.90, 0.95)",
+          "n": 13,
+          "all_three_correct": 0.9231,
+          "mean_confidence": 0.927
+        },
+        {
+          "confidence_range": "[0.95, 1.00)",
+          "n": 37,
+          "all_three_correct": 0.9189,
+          "mean_confidence": 0.98
+        }
+      ]
+    },
+    "hard_cases_only": {
+      "n": 18,
+      "intent_accuracy": 0.9444,
+      "urgency_accuracy": 0.8333,
+      "all_three_correct": 0.7778,
+      "escalation": {
+        "correct_escalations": 10,
+        "unnecessary_escalations": 0,
+        "missed_escalations": 0,
+        "correct_non_escalations": 8,
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "gold_escalation_rate": 0.5556,
+        "predicted_escalation_rate": 0.5556,
+        "exact_reason_match_when_both_escalate": "10/10",
+        "by_reason": {
+          "account_security": {
+            "gold": 1,
+            "predicted": 1,
+            "both": 1
+          },
+          "legal_or_chargeback_threat": {
+            "gold": 2,
+            "predicted": 2,
+            "both": 2
+          },
+          "out_of_scope": {
+            "gold": 2,
+            "predicted": 2,
+            "both": 2
+          },
+          "product_safety": {
+            "gold": 3,
+            "predicted": 3,
+            "both": 3
+          },
+          "refund_over_threshold": {
+            "gold": 1,
+            "predicted": 1,
+            "both": 1
+          },
+          "severe_customer_anger": {
+            "gold": 1,
+            "predicted": 1,
+            "both": 1
+          }
+        }
+      },
+      "intent_per_class": {
+        "order_management": {
+          "support": 2,
+          "predicted": 1,
+          "recall": 0.5,
+          "precision": 1.0
+        },
+        "delivery_and_shipping": {
+          "support": 1,
+          "predicted": 2,
+          "recall": 1.0,
+          "precision": 0.5
+        },
+        "returns_and_refunds": {
+          "support": 5,
+          "predicted": 5,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "account_access": {
+          "support": 2,
+          "predicted": 2,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "product_issue": {
+          "support": 4,
+          "predicted": 4,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "feedback_and_complaint": {
+          "support": 1,
+          "predicted": 1,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "marketing_preferences": {
+          "support": 1,
+          "predicted": 1,
+          "recall": 1.0,
+          "precision": 1.0
+        },
+        "out_of_scope": {
+          "support": 2,
+          "predicted": 2,
+          "recall": 1.0,
+          "precision": 1.0
+        }
+      },
+      "urgency_per_class": {
+        "high": {
+          "support": 4,
+          "predicted": 5,
+          "recall": 0.75,
+          "precision": 0.6
+        },
+        "normal": {
+          "support": 10,
+          "predicted": 9,
+          "recall": 0.8,
+          "precision": 0.8889
+        },
+        "low": {
+          "support": 4,
+          "predicted": 4,
+          "recall": 1.0,
+          "precision": 1.0
+        }
+      },
+      "intent_confusions": [
+        {
+          "gold": "order_management",
+          "predicted": "delivery_and_shipping",
+          "n": 1
+        }
+      ],
+      "urgency_confusions": [
+        {
+          "gold": "normal",
+          "predicted": "high",
+          "n": 2
+        },
+        {
+          "gold": "high",
+          "predicted": "normal",
+          "n": 1
+        }
+      ],
+      "confidence_calibration": [
+        {
+          "confidence_range": "[0.50, 0.70)",
+          "n": 1,
+          "all_three_correct": 1.0,
+          "mean_confidence": 0.62
+        },
+        {
+          "confidence_range": "[0.80, 0.90)",
+          "n": 1,
+          "all_three_correct": 0.0,
+          "mean_confidence": 0.84
+        },
+        {
+          "confidence_range": "[0.90, 0.95)",
+          "n": 3,
+          "all_three_correct": 0.3333,
+          "mean_confidence": 0.933
+        },
+        {
+          "confidence_range": "[0.95, 1.00)",
+          "n": 13,
+          "all_three_correct": 0.9231,
+          "mean_confidence": 0.983
+        }
+      ]
+    },
+    "by_hard_case_kind": {
+      "ambiguous": {
+        "n": 2,
+        "intent_accuracy": 0.5,
+        "urgency_accuracy": 1.0,
+        "escalation_accuracy": 1.0
+      },
+      "angry": {
+        "n": 2,
+        "intent_accuracy": 1.0,
+        "urgency_accuracy": 1.0,
+        "escalation_accuracy": 1.0
+      },
+      "high_value_refund": {
+        "n": 2,
+        "intent_accuracy": 1.0,
+        "urgency_accuracy": 1.0,
+        "escalation_accuracy": 1.0
+      },
+      "legal": {
+        "n": 2,
+        "intent_accuracy": 1.0,
+        "urgency_accuracy": 0.5,
+        "escalation_accuracy": 1.0
+      },
+      "multi_issue": {
+        "n": 2,
+        "intent_accuracy": 1.0,
+        "urgency_accuracy": 0.0,
+        "escalation_accuracy": 1.0
+      },
+      "off_topic": {
+        "n": 2,
+        "intent_accuracy": 1.0,
+        "urgency_accuracy": 1.0,
+        "escalation_accuracy": 1.0
+      },
+      "safety": {
+        "n": 2,
+        "intent_accuracy": 1.0,
+        "urgency_accuracy": 1.0,
+        "escalation_accuracy": 1.0
+      },
+      "security": {
+        "n": 2,
+        "intent_accuracy": 1.0,
+        "urgency_accuracy": 1.0,
+        "escalation_accuracy": 1.0
+      },
+      "typos": {
+        "n": 2,
+        "intent_accuracy": 1.0,
+        "urgency_accuracy": 1.0,
+        "escalation_accuracy": 1.0
+      }
+    }
+  },
+  "predictions": [
+    {
+      "id": "hl-0001",
+      "text": "WHY do I keep getting your emails?? I have unsubscribed FOUR TIMES. Take me off your list. This is harassment at this point.",
+      "hard_case": true,
+      "hard_case_kind": "angry",
+      "human_reviewed": false,
+      "gold": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.98,
+        "rationale": "The customer is requesting removal from marketing emails; frustration and the word “harassment” do not include a legal threat or severe abuse requiring escalation."
+      }
+    },
+    {
+      "id": "hl-0003",
+      "text": "opening new premium account",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.78,
+        "rationale": "The customer appears to want to create a new account, with no safety, security, financial, or escalation trigger indicated."
+      }
+    },
+    {
+      "id": "hl-0005",
+      "text": "assistance to make a customer claim",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "feedback_and_complaint",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "out_of_scope",
+        "urgency": "low",
+        "escalate": true,
+        "escalation_reasons": [
+          "out_of_scope"
+        ],
+        "confidence": 0.42,
+        "rationale": "The request is too vague to identify a Hearth & Loom support issue and appears to ask for assistance with a generic customer claim, so it is escalated as out of scope."
+      }
+    },
+    {
+      "id": "hl-0007",
+      "text": "erorr submitting the new shipping address",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "delivery_and_shipping",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "delivery_and_shipping",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.86,
+        "rationale": "The customer is blocked while trying to change their delivery address, with no stated security concern or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0011",
+      "text": "Two things to return from order 52001 - the brass floor lamp at £74 and the pair of side tables at £58. Neither fits the space. Can I return both together?",
+      "hard_case": true,
+      "hard_case_kind": "high_value_refund",
+      "human_reviewed": false,
+      "gold": {
+        "intent": "returns_and_refunds",
+        "urgency": "normal",
+        "escalate": true,
+        "escalation_reasons": [
+          "refund_over_threshold"
+        ]
+      },
+      "pred": {
+        "intent": "returns_and_refunds",
+        "urgency": "normal",
+        "escalate": true,
+        "escalation_reasons": [
+          "refund_over_threshold"
+        ],
+        "confidence": 0.99,
+        "rationale": "The customer is requesting a combined return worth £132 in total, which is a stated amount over the £100 escalation threshold."
+      }
+    },
+    {
+      "id": "hl-0014",
+      "text": "i have problems  with opening a premium account",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.72,
+        "rationale": "The customer appears to be having trouble creating or upgrading to a premium account, with no indication of security risk or another escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0019",
+      "text": "how to check what payment options are available",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "billing_and_payment",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "billing_and_payment",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.99,
+        "rationale": "The customer is asking for information about available payment methods, with no escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0020",
+      "text": "status of order",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "delivery_and_shipping",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "delivery_and_shipping",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.88,
+        "rationale": "The customer is asking for an order-status update, with no stated safety, security, refund-threshold, legal, or severe-anger escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0023",
+      "text": "how can I get information about premium account removals?",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": true,
+        "escalation_reasons": [
+          "out_of_scope"
+        ]
+      },
+      "pred": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.76,
+        "rationale": "This is an informational question about removing an account, with no indication of unauthorised access, harm, or another escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0025",
+      "text": "i try to download bill #37777",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "billing_and_payment",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "billing_and_payment",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.96,
+        "rationale": "The customer is trying to obtain an invoice/bill, with no stated escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0029",
+      "text": "I do not know what I have to do to talk wiyh a live agent",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.99,
+        "rationale": "The customer is explicitly asking how to reach a live agent, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0034",
+      "text": "how to make a customer claim against your organization?",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "feedback_and_complaint",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "out_of_scope",
+        "urgency": "low",
+        "escalate": true,
+        "escalation_reasons": [
+          "out_of_scope"
+        ],
+        "confidence": 0.7,
+        "rationale": "The ticket is too vague to identify a Hearth & Loom support request or a specific claim, so it is treated as outside the support remit and escalated for human review."
+      }
+    },
+    {
+      "id": "hl-0036",
+      "text": "i dont know what i have to do to report issues with payments",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "billing_and_payment",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "billing_and_payment",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.93,
+        "rationale": "The customer is asking for guidance on reporting a payment issue, with no indication of an irreversible transaction, unauthorised activity, or another escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0040",
+      "text": "I'm trying to see at what time customer support available is",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.93,
+        "rationale": "The customer is asking about support availability hours, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0042",
+      "text": "I've forgotten my password and the reset email isn't coming through. I've checked spam. Can you help me get back in? Account is under this email address.",
+      "hard_case": true,
+      "hard_case_kind": "security",
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_access",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_access",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.99,
+        "rationale": "This is a standard password-reset and missing reset-email access issue, with no indication of unauthorised account activity or another escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0044",
+      "text": "i dont knowwhat to do to submit some feedback for a product",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "feedback_and_complaint",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "feedback_and_complaint",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.93,
+        "rationale": "The customer is asking how to submit product feedback, with no safety, financial, security, or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0046",
+      "text": "I'm chasing a boiler service that was booked for the 14th and nobody came. The engineer was supposed to call ahead. This is the second missed appointment. Reference HB-20119.",
+      "hard_case": true,
+      "hard_case_kind": "off_topic",
+      "human_reviewed": false,
+      "gold": {
+        "intent": "out_of_scope",
+        "urgency": "normal",
+        "escalate": true,
+        "escalation_reasons": [
+          "out_of_scope"
+        ]
+      },
+      "pred": {
+        "intent": "out_of_scope",
+        "urgency": "normal",
+        "escalate": true,
+        "escalation_reasons": [
+          "out_of_scope"
+        ],
+        "confidence": 0.99,
+        "rationale": "This concerns a missed boiler-service appointment, which is outside Hearth & Loom's homewares support remit, so it must be escalated as out of scope."
+      }
+    },
+    {
+      "id": "hl-0049",
+      "text": "help talking  with a live agent",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.99,
+        "rationale": "The customer explicitly asks to speak with a live agent, with no stated issue requiring escalation."
+      }
+    },
+    {
+      "id": "hl-0050",
+      "text": "Just to let you know, the table lamp from order 50441 gets extremely hot after about twenty minutes and there was a burning smell yesterday. I've unplugged it and put it in the garage. Not after a refund, just thought someone should know.",
+      "hard_case": true,
+      "hard_case_kind": "safety",
+      "human_reviewed": false,
+      "gold": {
+        "intent": "product_issue",
+        "urgency": "high",
+        "escalate": true,
+        "escalation_reasons": [
+          "product_safety"
+        ]
+      },
+      "pred": {
+        "intent": "product_issue",
+        "urgency": "high",
+        "escalate": true,
+        "escalation_reasons": [
+          "product_safety"
+        ],
+        "confidence": 0.99,
+        "rationale": "The lamp overheating and emitting a burning smell presents a potential electrical fire hazard, so it requires product-safety escalation."
+      }
+    },
+    {
+      "id": "hl-0052",
+      "text": "I have got to see the allowed payment modalities, help me",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "billing_and_payment",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "billing_and_payment",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.98,
+        "rationale": "The customer is asking which payment methods are accepted, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0053",
+      "text": "I do not know how I can speak to customer support",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.99,
+        "rationale": "The customer is asking how to contact customer support, with no urgent issue or escalation trigger stated."
+      }
+    },
+    {
+      "id": "hl-0054",
+      "text": "I need to cancel order 52310 please, I only placed it an hour ago and I've realised I ordered the wrong size rug. Also I think I've been charged twice, there are two pending amounts on my card for £64.99 each.",
+      "hard_case": true,
+      "hard_case_kind": "multi_issue",
+      "human_reviewed": false,
+      "gold": {
+        "intent": "order_management",
+        "urgency": "high",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "order_management",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.84,
+        "rationale": "The primary request is to cancel a recently placed order; the duplicate pending card amounts do not indicate unauthorised access or trigger any escalation criterion."
+      }
+    },
+    {
+      "id": "hl-0057",
+      "text": "assistance to unsubscribe from the company newsletter",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.99,
+        "rationale": "The customer is requesting help unsubscribing from marketing emails, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0059",
+      "text": "assistance to use the premium profile",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.58,
+        "rationale": "This appears to be a vague request for help using a premium profile, with no stated security issue, urgent consequence, or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0060",
+      "text": "I don't know what to do to contact a live agent",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.99,
+        "rationale": "The customer is asking for a route to a live agent, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0064",
+      "text": "i want help to check how soon can i expect my order",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "delivery_and_shipping",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "delivery_and_shipping",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.98,
+        "rationale": "The customer is asking for an expected delivery timeframe, with no indication of a time-critical issue or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0069",
+      "text": "can ya help me shop several of ur product",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "order_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "order_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.84,
+        "rationale": "The customer appears to want help purchasing multiple products, with no time-sensitive issue or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0072",
+      "text": "how to notify of registration issues?",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_access",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_access",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.72,
+        "rationale": "This appears to be a general question about reporting account registration problems, with no indication of unauthorised access or another escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0073",
+      "text": "get invoice #85632",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "billing_and_payment",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "billing_and_payment",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.97,
+        "rationale": "The customer is requesting an invoice, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0074",
+      "text": "can you help me changing a product of a purchase?",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "order_management",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "order_management",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.93,
+        "rationale": "The customer is asking to change a product in an existing purchase, with no stated escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0077",
+      "text": "I want to remove some articles from order 46399",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "order_management",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "order_management",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.98,
+        "rationale": "The customer is requesting a change to the contents of an existing order, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0078",
+      "text": "how can I lodge a customer reclamation against your company?",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "feedback_and_complaint",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "feedback_and_complaint",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.86,
+        "rationale": "The customer is asking how to make a complaint, with no concrete operational issue, legal threat, or other escalation trigger stated."
+      }
+    },
+    {
+      "id": "hl-0079",
+      "text": "I've had an email that looks like it's from you asking me to confirm my card details via a link, but the address is hearthandloom-billing.net which doesn't look right. Did you send this? I haven't clicked anything.",
+      "hard_case": true,
+      "hard_case_kind": "security",
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_access",
+        "urgency": "high",
+        "escalate": true,
+        "escalation_reasons": [
+          "account_security"
+        ]
+      },
+      "pred": {
+        "intent": "account_access",
+        "urgency": "high",
+        "escalate": true,
+        "escalation_reasons": [
+          "account_security"
+        ],
+        "confidence": 0.99,
+        "rationale": "The customer reports a suspected phishing email requesting card details, so this is an account-security concern requiring human handling."
+      }
+    },
+    {
+      "id": "hl-0081",
+      "text": "I want to inform of a sign-up error",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_access",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_access",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.82,
+        "rationale": "This reports a registration/sign-up problem, with no indication of unauthorised access, safety risk, or other escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0082",
+      "text": "I have to see in which cases can I ask for a reimbursement",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "returns_and_refunds",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "returns_and_refunds",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.98,
+        "rationale": "The customer is asking generally about reimbursement eligibility, with no stated amount, safety issue, threat, or other escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0085",
+      "text": "I have to get a compensation of money",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "returns_and_refunds",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "returns_and_refunds",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.48,
+        "rationale": "The customer appears to be requesting monetary compensation, but gives no amount, reason, or indication of an escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0087",
+      "text": "edit pro account",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.7,
+        "rationale": "The customer appears to want to edit their account, and there is no indication of an escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0090",
+      "text": "i dont know wgat i need to do to sign up to the newsletter",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.99,
+        "rationale": "The customer is asking how to subscribe to the newsletter, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0092",
+      "text": "I try to chat with somebody",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.94,
+        "rationale": "The customer is explicitly asking to speak with someone, with no stated issue requiring escalation."
+      }
+    },
+    {
+      "id": "hl-0093",
+      "text": "need help to see when my purchase is gonna arrive",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "delivery_and_shipping",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "delivery_and_shipping",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.97,
+        "rationale": "The customer is asking for their order’s expected arrival time, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0095",
+      "text": "help ascquiring a few of your article",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "order_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "order_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.62,
+        "rationale": "The customer appears to be asking for help purchasing items, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0096",
+      "text": "i expect a compensqtion of 37 dollars",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "returns_and_refunds",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "feedback_and_complaint",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.55,
+        "rationale": "The customer appears to be requesting £37-equivalent compensation, but no escalation applies because the stated amount is below £100 and there is no threat, safety issue, or account-security concern."
+      }
+    },
+    {
+      "id": "hl-0101",
+      "text": "there is a problem submitting my secondary shipping address",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "delivery_and_shipping",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "delivery_and_shipping",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.9,
+        "rationale": "The customer is unable to submit a delivery address, which blocks shipping setup but presents no escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0102",
+      "text": "I do not know how I can reoprt signup errors",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_access",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_access",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.62,
+        "rationale": "The customer appears to be asking how to report an account sign-up problem, with no indication of unauthorised access or another escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0103",
+      "text": "I have to see your money back guarantee, help me",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "returns_and_refunds",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "returns_and_refunds",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.86,
+        "rationale": "The customer is requesting information about the money-back guarantee, with no stated refund amount, safety issue, or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0107",
+      "text": "can I download my invoice from Priya Shah?",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "billing_and_payment",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "billing_and_payment",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.86,
+        "rationale": "This is an administrative request for an invoice, with no stated escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0108",
+      "text": "help me restore the key of my user",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_access",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_access",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.72,
+        "rationale": "The customer appears to need help recovering an account credential, with no indication of unauthorised access or other escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0109",
+      "text": "I need assistance to receive your corporate newsletter",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.97,
+        "rationale": "The customer is asking to subscribe to the corporate newsletter, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0111",
+      "text": "I need help cancelling my company newsletter subscription",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.99,
+        "rationale": "This is a routine request to unsubscribe from marketing emails, with no escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0113",
+      "text": "I do not know how to leave an opinion for a service",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "feedback_and_complaint",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "feedback_and_complaint",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.93,
+        "rationale": "The customer is asking how to leave service feedback, with no operational issue or escalation trigger stated."
+      }
+    },
+    {
+      "id": "hl-0114",
+      "text": "I need help modifying the delivery address",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "delivery_and_shipping",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "delivery_and_shipping",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.98,
+        "rationale": "The customer is requesting a delivery-address change, with no stated time-critical deadline or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0115",
+      "text": "hi wher is my ordr 48293 pls its ment to arive tusday and nuthing yet, can u chek for me thnx",
+      "hard_case": true,
+      "hard_case_kind": "typos",
+      "human_reviewed": false,
+      "gold": {
+        "intent": "delivery_and_shipping",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "delivery_and_shipping",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.98,
+        "rationale": "The customer is asking for a status check on an overdue order, with no stated escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0118",
+      "text": "needassistance to demand rebates",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "returns_and_refunds",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "returns_and_refunds",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.48,
+        "rationale": "The customer appears to be seeking a rebate/refund, but gives no amount, order context, or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0120",
+      "text": "I'm trying to buy a  product",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "order_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "order_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.72,
+        "rationale": "The customer appears to need help placing a purchase, with no stated risk, deadline, or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0123",
+      "text": "i want assistance to cancel order 50521",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "order_management",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "order_management",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.99,
+        "rationale": "The customer is asking to cancel an order, with no stated time-critical deadline or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0124",
+      "text": "can you help me retrieve the PIN code of my account?",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_access",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_access",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.93,
+        "rationale": "The customer needs account access help retrieving a PIN code, with no indication of unauthorised access or other escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0125",
+      "text": "Order 49877 - the second box never turned up, courier says delivered but it isn't here. Separately the floor lamp that DID arrive has a wobbly base, it tipped over when the cat brushed past it. Do I need to send it back or will you send a replacement base?",
+      "hard_case": true,
+      "hard_case_kind": "multi_issue",
+      "human_reviewed": false,
+      "gold": {
+        "intent": "product_issue",
+        "urgency": "normal",
+        "escalate": true,
+        "escalation_reasons": [
+          "product_safety"
+        ]
+      },
+      "pred": {
+        "intent": "product_issue",
+        "urgency": "high",
+        "escalate": true,
+        "escalation_reasons": [
+          "product_safety"
+        ],
+        "confidence": 0.94,
+        "rationale": "Escalation is required because the wobbly lamp base tipped over easily, creating a potential physical safety risk."
+      }
+    },
+    {
+      "id": "hl-0126",
+      "text": "want help to make a complaint",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "feedback_and_complaint",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "feedback_and_complaint",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.88,
+        "rationale": "The customer wants to make a complaint but provides no concrete operational issue or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0130",
+      "text": "i need help to see the cancellation penalty",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "returns_and_refunds",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "returns_and_refunds",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.91,
+        "rationale": "This is an informational question about a cancellation fee, with no stated amount or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0136",
+      "text": "I cannot afford order 46104, I need help canceling it",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "order_management",
+        "urgency": "high",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "order_management",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.98,
+        "rationale": "The customer is asking to cancel an order, with no stated escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0141",
+      "text": "could I make a goddamn reclamation?",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "feedback_and_complaint",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "feedback_and_complaint",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.55,
+        "rationale": "The customer appears to be asking generally about making a complaint or claim; the mild profanity is not directed abuse and does not meet the escalation threshold."
+      }
+    },
+    {
+      "id": "hl-0143",
+      "text": "can you help me informing of a registration error?",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_access",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_access",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.8,
+        "rationale": "The customer appears to be reporting a registration problem, with no indication of account compromise or any escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0144",
+      "text": "I no longerr want purchase 51880",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "order_management",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "order_management",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.93,
+        "rationale": "The customer appears to be requesting cancellation of order 51880, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0146",
+      "text": "I do not know what to do to sign up to the newsletter",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.99,
+        "rationale": "The customer is asking how to subscribe to the newsletter, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0151",
+      "text": "I've been a customer for six years and spent a lot of money with you. After the way this return has been handled I won't be ordering again and I'll be closing my account. I'd like someone to tell me why the refund was reduced by £18 without warning.",
+      "hard_case": true,
+      "hard_case_kind": "angry",
+      "human_reviewed": false,
+      "gold": {
+        "intent": "returns_and_refunds",
+        "urgency": "normal",
+        "escalate": true,
+        "escalation_reasons": [
+          "severe_customer_anger"
+        ]
+      },
+      "pred": {
+        "intent": "returns_and_refunds",
+        "urgency": "normal",
+        "escalate": true,
+        "escalation_reasons": [
+          "severe_customer_anger"
+        ],
+        "confidence": 0.98,
+        "rationale": "The primary request is an explanation for a reduced refund, and escalation is required because the customer explicitly says they will no longer order from the company."
+      }
+    },
+    {
+      "id": "hl-0153",
+      "text": "The bunk bed ladder came away from the frame while my son was climbing down. Two of the fixing points had sheared clean off. He's fine but he could easily have broken something. This is order 48770 and I'm quite shaken by it.",
+      "hard_case": true,
+      "hard_case_kind": "safety",
+      "human_reviewed": false,
+      "gold": {
+        "intent": "product_issue",
+        "urgency": "high",
+        "escalate": true,
+        "escalation_reasons": [
+          "product_safety"
+        ]
+      },
+      "pred": {
+        "intent": "product_issue",
+        "urgency": "high",
+        "escalate": true,
+        "escalation_reasons": [
+          "product_safety"
+        ],
+        "confidence": 0.99,
+        "rationale": "The ladder detached during use, creating a clear fall and injury risk, so this is a product safety escalation."
+      }
+    },
+    {
+      "id": "hl-0154",
+      "text": "need help seeing the termination chaeges",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "returns_and_refunds",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "returns_and_refunds",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.48,
+        "rationale": "The customer appears to be asking to view cancellation or termination charges, with no stated amount, threat, or other escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0155",
+      "text": "modify gold accunt",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.68,
+        "rationale": "The customer appears to want to edit their account, with no indication of unauthorised access or another escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0157",
+      "text": "help me to purchase some of your article",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "order_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "order_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.93,
+        "rationale": "The customer is asking for help placing a purchase, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0159",
+      "text": "Hello, I'd like a refund on the Ashford wool rug, order 51877. It was £95 including delivery. It's unused and still in the original wrapping.",
+      "hard_case": true,
+      "hard_case_kind": "high_value_refund",
+      "human_reviewed": false,
+      "gold": {
+        "intent": "returns_and_refunds",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "returns_and_refunds",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.98,
+        "rationale": "This is a standard £95 refund request for an unused item, so no stated escalation trigger applies."
+      }
+    },
+    {
+      "id": "hl-0160",
+      "text": "I do not know how to set up the secondary shipping address",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "delivery_and_shipping",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "delivery_and_shipping",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.96,
+        "rationale": "The customer is asking how to configure a shipping address, with no time-sensitive issue or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0162",
+      "text": "I want help to file a reclamation against your company",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "feedback_and_complaint",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "feedback_and_complaint",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.7,
+        "rationale": "The customer appears to be making a complaint but gives no concrete issue, legal threat, or other escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0164",
+      "text": "problem with my  forgotten pin",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_access",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_access",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.82,
+        "rationale": "This appears to be a routine forgotten PIN/access issue, with no indication of unauthorised account use or another escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0165",
+      "text": "I do not know what to do to switch to the premium account",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.96,
+        "rationale": "The customer is asking how to change their account tier, with no security concern or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0167",
+      "text": "is it possible to unsubscribe from the company newsletter",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.99,
+        "rationale": "The customer is asking to unsubscribe from the newsletter, which is a routine marketing-preference request with no escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0172",
+      "text": "Is the Marlow armchair actually in stock? The site said 3-5 days when I looked on Tuesday and now it says 6 weeks. I haven't ordered yet but I'd like to know before I do.",
+      "hard_case": true,
+      "hard_case_kind": "ambiguous",
+      "human_reviewed": false,
+      "gold": {
+        "intent": "order_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "delivery_and_shipping",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.93,
+        "rationale": "This is a pre-purchase availability and delivery-timescale question, with no stated escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0175",
+      "text": "what do i need to do to report an issue with a signup",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_access",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_access",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.78,
+        "rationale": "This is a general query about a signup/registration problem, with no indication of unauthorised access or another escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0177",
+      "text": "help me reporting problems with online payment",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "billing_and_payment",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "billing_and_payment",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.86,
+        "rationale": "The customer is seeking help with an online payment problem, with no stated security concern, irreversible payment issue, or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0182",
+      "text": "Do you know whether the Ashford range is manufactured in a factory that uses organic cotton certification, and could you send me the audit reports for your dye suppliers? I'm writing a piece on textile supply chains.",
+      "hard_case": true,
+      "hard_case_kind": "off_topic",
+      "human_reviewed": false,
+      "gold": {
+        "intent": "out_of_scope",
+        "urgency": "low",
+        "escalate": true,
+        "escalation_reasons": [
+          "out_of_scope"
+        ]
+      },
+      "pred": {
+        "intent": "out_of_scope",
+        "urgency": "low",
+        "escalate": true,
+        "escalation_reasons": [
+          "out_of_scope"
+        ],
+        "confidence": 0.93,
+        "rationale": "This is a journalistic supply-chain research request rather than a customer support matter, so it should be handled outside the support workflow."
+      }
+    },
+    {
+      "id": "hl-0184",
+      "text": "how can i talk with an human agent",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.99,
+        "rationale": "The customer explicitly asks how to speak with a human agent, with no indication of urgency or an escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0185",
+      "text": "I don't know how I can speak with customer support",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.98,
+        "rationale": "The customer is asking for a route to speak with support, with no urgent issue or escalation trigger stated."
+      }
+    },
+    {
+      "id": "hl-0186",
+      "text": "updating standard account",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.72,
+        "rationale": "The ticket appears to concern editing an account, with no stated security concern or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0187",
+      "text": "I am waiting for a restitution of £423.99",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "returns_and_refunds",
+        "urgency": "normal",
+        "escalate": true,
+        "escalation_reasons": [
+          "refund_over_threshold"
+        ]
+      },
+      "pred": {
+        "intent": "returns_and_refunds",
+        "urgency": "normal",
+        "escalate": true,
+        "escalation_reasons": [
+          "refund_over_threshold"
+        ],
+        "confidence": 0.88,
+        "rationale": "The customer is chasing a £423.99 restitution/refund, which exceeds the stated £100 escalation threshold."
+      }
+    },
+    {
+      "id": "hl-0190",
+      "text": "Further to my previous correspondence of 2 September, I have instructed a solicitor regarding the damaged sideboard supplied under order 47338 and the subsequent refusal to collect it. Please direct all further communication to them; details below.",
+      "hard_case": true,
+      "hard_case_kind": "legal",
+      "human_reviewed": false,
+      "gold": {
+        "intent": "product_issue",
+        "urgency": "normal",
+        "escalate": true,
+        "escalation_reasons": [
+          "legal_or_chargeback_threat"
+        ]
+      },
+      "pred": {
+        "intent": "product_issue",
+        "urgency": "normal",
+        "escalate": true,
+        "escalation_reasons": [
+          "legal_or_chargeback_threat"
+        ],
+        "confidence": 0.97,
+        "rationale": "The ticket concerns a damaged sideboard and explicitly states that the customer has instructed a solicitor, requiring legal escalation."
+      }
+    },
+    {
+      "id": "hl-0191",
+      "text": "want help to restore my pwd",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_access",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_access",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.96,
+        "rationale": "The customer is requesting password restoration, with no indication of unauthorised access or other escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0194",
+      "text": "assistance checking what hours i can reach customer sdupport",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.96,
+        "rationale": "The customer is asking how to reach support and at what hours, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0197",
+      "text": "I don't know what I need to do to get invoice #85632",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "billing_and_payment",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "billing_and_payment",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.93,
+        "rationale": "The customer is asking how to obtain an invoice, with no stated escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0199",
+      "text": "I don't know what I ahve to do to see my bill from Tom Okafor",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "billing_and_payment",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "billing_and_payment",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.88,
+        "rationale": "The customer is asking how to view their bill, with no stated payment deadline, dispute, or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0202",
+      "text": "how do I sign up to the newsletter?",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.99,
+        "rationale": "The customer is asking how to subscribe to marketing emails, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0205",
+      "text": "help to ssee in what situations can i ask for reimbursements",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "returns_and_refunds",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "returns_and_refunds",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.96,
+        "rationale": "This is a general reimbursement-policy question with no stated amount, safety concern, or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0211",
+      "text": "I want to submit the shipping address",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "delivery_and_shipping",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "delivery_and_shipping",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.68,
+        "rationale": "The customer appears to be asking to provide or set a delivery address, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0212",
+      "text": "i cant see order 51647 goddamn current satus",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "delivery_and_shipping",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "delivery_and_shipping",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.93,
+        "rationale": "The customer is asking for the current status of an order; the mild profanity is directed at the situation and does not meet the severe-customer-anger escalation threshold."
+      }
+    },
+    {
+      "id": "hl-0213",
+      "text": "wanna receive ur company newsletter how do i do it",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.99,
+        "rationale": "The customer is asking how to subscribe to the company newsletter, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0214",
+      "text": "I have got to see the early exit penalpties",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "returns_and_refunds",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "returns_and_refunds",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.84,
+        "rationale": "The customer appears to be asking to view early-exit/cancellation penalties; no escalation applies because this is a policy information request with no stated high-value refund, safety, legal, or security concern."
+      }
+    },
+    {
+      "id": "hl-0215",
+      "text": "uhave a way to send a reivew",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "feedback_and_complaint",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "feedback_and_complaint",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.78,
+        "rationale": "The customer appears to be asking how to submit a review, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0217",
+      "text": "I want to receive your company newsletter , how do I do it?",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.99,
+        "rationale": "The customer is asking how to subscribe to the company newsletter, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0218",
+      "text": "where can I see at what time I can reach customer support?",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "human_agent_request",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.98,
+        "rationale": "The customer is asking for customer support contact availability, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0220",
+      "text": "I do not know howq to report an error with online payments",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "billing_and_payment",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "billing_and_payment",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.84,
+        "rationale": "The customer is seeking help reporting an online payment error, with no stated security concern, irreversible payment issue, or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0221",
+      "text": "It still hasn't been sorted out. You said last week it would be. Can someone actually deal with this please.",
+      "hard_case": true,
+      "hard_case_kind": "ambiguous",
+      "human_reviewed": false,
+      "gold": {
+        "intent": "feedback_and_complaint",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "feedback_and_complaint",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.62,
+        "rationale": "The customer reports an unresolved prior issue but gives no specific operational request or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0225",
+      "text": "i want help to notify of registration problems",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_access",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_access",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.78,
+        "rationale": "The customer appears to be reporting a registration problem, with no indication of unauthorised access or another escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0226",
+      "text": "how do I add some items to order 52020?",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "order_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "order_management",
+        "urgency": "normal",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.98,
+        "rationale": "The customer wants to change an existing order by adding items, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0228",
+      "text": "i do not knwo what i have to do to remove my premium account",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.98,
+        "rationale": "The customer is asking how to remove their premium account, with no security concern or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0233",
+      "text": "I've asked four times for the refund on order 49001 and had nothing. If it isn't in my account by Friday I'm raising a chargeback with my bank and reporting you to Trading Standards.",
+      "hard_case": true,
+      "hard_case_kind": "legal",
+      "human_reviewed": false,
+      "gold": {
+        "intent": "returns_and_refunds",
+        "urgency": "normal",
+        "escalate": true,
+        "escalation_reasons": [
+          "legal_or_chargeback_threat"
+        ]
+      },
+      "pred": {
+        "intent": "returns_and_refunds",
+        "urgency": "high",
+        "escalate": true,
+        "escalation_reasons": [
+          "legal_or_chargeback_threat"
+        ],
+        "confidence": 0.99,
+        "rationale": "This is a chase for an outstanding refund, and the stated deadline plus threatened chargeback and Trading Standards report requires escalation."
+      }
+    },
+    {
+      "id": "hl-0234",
+      "text": "I am trying to see how soon can I expect my shipment",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "delivery_and_shipping",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "delivery_and_shipping",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.98,
+        "rationale": "The customer is asking for an expected delivery timescale, with no stated time-critical consequence or escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0235",
+      "text": "i have got to cancel the subscription to ur newsletter",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "marketing_preferences",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.99,
+        "rationale": "The customer is asking to unsubscribe from the newsletter, with no escalation trigger present."
+      }
+    },
+    {
+      "id": "hl-0240",
+      "text": "I have to change to the standard account",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "account_management",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.74,
+        "rationale": "The customer appears to want to switch their account type, with no indication of unauthorised access, time sensitivity, or another escalation trigger."
+      }
+    },
+    {
+      "id": "hl-0246",
+      "text": "i need assistance to submit feedback about a service",
+      "hard_case": false,
+      "hard_case_kind": null,
+      "human_reviewed": false,
+      "gold": {
+        "intent": "feedback_and_complaint",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "feedback_and_complaint",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.98,
+        "rationale": "The customer is seeking help to submit service feedback, with no urgent issue or escalation trigger stated."
+      }
+    },
+    {
+      "id": "hl-0247",
+      "text": "whats ur retruns policy? bougt a mirror last mnth n it dosnt fit the space, can i still snd it bk? no damge to it",
+      "hard_case": true,
+      "hard_case_kind": "typos",
+      "human_reviewed": false,
+      "gold": {
+        "intent": "returns_and_refunds",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": []
+      },
+      "pred": {
+        "intent": "returns_and_refunds",
+        "urgency": "low",
+        "escalate": false,
+        "escalation_reasons": [],
+        "confidence": 0.96,
+        "rationale": "The customer is asking about return eligibility for an undamaged mirror that no longer fits; no escalation trigger is present."
+      }
+    }
+  ]
+}

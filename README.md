@@ -102,6 +102,41 @@ time), **missed** (the expensive one), and correct non-escalation. Cost and late
 ticket. Confidence calibration. Everything is also sliced easy-vs-hard and per hard-case
 kind, because an average over both hides the only interesting part.
 
+## Baseline results
+
+`baseline_v1` on `gpt-5.6-terra` at `effort=high`, run 2026-09-21. Full records in
+`results/`; `results/latest_dev.json` is the bar later versions must beat.
+
+> **These are self-agreement figures, not accuracy.** The same model drafted the urgency
+> and escalation labels it is scored against here, and **no ticket has been reviewed by a
+> human yet**. A model agreeing with its own earlier judgement is not evidence the
+> judgement was right. Intent is the partial exception: for the 216 Bitext tickets it
+> comes from a deterministic mapping, not from the model. Read the escalation and urgency
+> numbers as a fixed bar for later versions, not as a measure of how good the triage is.
+
+| Metric | Dev (144) | Test (108) |
+|---|---:|---:|
+| Intent accuracy | 94.4% | 96.3% |
+| Urgency accuracy | 93.1% | 90.7% |
+| Escalation accuracy | 99.3% | 97.2% |
+| All three correct | 88.2% | 87.0% |
+| Missed escalations | 1 of 17 | 2 of 24 |
+| Unnecessary escalations | 0 | 1 |
+| Cost per ticket | $0.00112 | $0.00116 |
+| Latency p50 / p95 | 2.1s / 2.8s | 2.1s / 3.1s |
+
+Dev and test agree to within a couple of points on every metric, which is what you would
+expect from one prompt applied to two halves of one stratified sample. It says the split
+is sound; it says nothing about whether the labels are right.
+
+The escalation numbers are the ones to distrust most. Precision 1.00 and recall 0.94 on
+dev is not a credible measure of a first attempt — it mostly measures the same model
+applying the same rules the same way twice. The single missed escalation is instructive:
+on `hl-0224` (*"need to switch to the fucking premium account help me"*) the labeller
+called `severe_customer_anger` and the baseline did not. The brief says mild swearing
+about the situation is **not** severe anger, so the baseline looks right and the label
+looks wrong. That ticket is in the review sample.
+
 ## Status
 
 See `CLAUDE.md`.

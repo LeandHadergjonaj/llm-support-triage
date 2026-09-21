@@ -16,6 +16,16 @@ escalating risky or uncertain ones to a human review queue.
 
 ## Where we are
 
+**Step 1b complete: eval set built, baseline scored on dev and test, review sample
+exported. Awaiting the human label-review pass.**
+
+252 tickets (216 Bitext, 36 authored hard cases), labels drafted by `gpt-5.6-terra`,
+split 144 dev / 108 test. Baseline `baseline_v1` scored on both. Nothing is
+human-reviewed yet, so every number is self-agreement — see `README.md`.
+
+Next: correct `data/review/label_review_sample.csv`, run `make import-review`, re-run
+`make eval`, and treat *that* as the baseline of record.
+
 **Step 1 complete: evaluation set and single-prompt baseline.**
 
 Deliberately *not* built yet: router, specialist answerers, retrieval over policy docs,
@@ -76,4 +86,7 @@ make test       checks that need no API key
 
 ## Current results
 
-Not yet run — see the section in `README.md` once populated.
+Dev: intent 94.4%, urgency 93.1%, escalation 99.3%, all three 88.2%.
+Test: intent 96.3%, urgency 90.7%, escalation 97.2%, all three 87.0%.
+$0.61 spent building and scoring. Full table and the caveats that matter in `README.md`.
+Pre-review; the labels are the model's own, so these are a bar, not a measure.
